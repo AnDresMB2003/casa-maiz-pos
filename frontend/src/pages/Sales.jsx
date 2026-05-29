@@ -24,14 +24,8 @@ function Sales() {
   const [cart, setCart] =
     useState([]);
 
-  const [invoice, setInvoice] =
+  const [draftSale, setDraftSale] =
     useState(null);
-
-  const [search, setSearch] =
-    useState("");
-
-  const [category, setCategory] =
-    useState("Todos");
 
   useEffect(() => {
 
@@ -61,38 +55,6 @@ function Sales() {
       );
     }
   }
-
-  const categories =
-    [
-      "Todos",
-      ...new Set(
-        products.map(
-          (p) => p.category
-        )
-      ),
-    ];
-
-  const filteredProducts =
-    products.filter((product) => {
-
-      const matchSearch =
-        product.name
-          .toLowerCase()
-          .includes(
-            search.toLowerCase()
-          );
-
-      const matchCategory =
-        category === "Todos"
-          ? true
-          : product.category ===
-            category;
-
-      return (
-        matchSearch &&
-        matchCategory
-      );
-    });
 
   function addToCart(product) {
 
@@ -197,7 +159,7 @@ function Sales() {
   const total =
     subtotal + iva;
 
-  async function completeSale() {
+  function completeSale() {
 
     if (cart.length === 0) {
 
@@ -208,46 +170,12 @@ function Sales() {
       return;
     }
 
-    try {
-
-      const response =
-        await axios.post(
-          "http://localhost:4000/api/sales",
-          {
-            cart,
-            subtotal,
-            iva,
-            total,
-          }
-        );
-
-      const invoiceResponse =
-        await axios.get(
-          `http://localhost:4000/api/sales/${response.data.saleId}`
-        );
-
-      setInvoice(
-        invoiceResponse.data
-      );
-
-      setCart([]);
-
-      loadProducts();
-
-      toast.success(
-        "Venta completada"
-      );
-
-    } catch (error) {
-
-      console.log(error);
-
-      toast.error(
-        error.response?.data
-          ?.error ||
-          "Error realizando venta"
-      );
-    }
+    setDraftSale({
+      cart,
+      subtotal,
+      iva,
+      total,
+    });
   }
 
   return (
@@ -268,11 +196,8 @@ function Sales() {
           <div
             className="
               flex
-              flex-col
-              lg:flex-row
-              lg:items-center
-              lg:justify-between
-              gap-5
+              items-center
+              justify-between
               mb-8
             "
           >
@@ -301,73 +226,6 @@ function Sales() {
 
             </div>
 
-            <div
-              className="
-                flex
-                gap-4
-                flex-col
-                md:flex-row
-              "
-            >
-
-              <input
-                type="text"
-                placeholder="Buscar producto..."
-                value={search}
-                onChange={(e) =>
-                  setSearch(
-                    e.target.value
-                  )
-                }
-                className="
-                  px-5
-                  py-3
-                  rounded-2xl
-                  bg-white/[0.04]
-                  border
-                  border-white/10
-                  text-white
-                  outline-none
-                "
-              />
-
-              <select
-                value={category}
-                onChange={(e) =>
-                  setCategory(
-                    e.target.value
-                  )
-                }
-                className="
-                  px-5
-                  py-3
-                  rounded-2xl
-                  bg-white/[0.04]
-                  border
-                  border-white/10
-                  text-white
-                  outline-none
-                "
-              >
-
-                {categories.map(
-                  (cat) => (
-
-                    <option
-                      key={cat}
-                      value={cat}
-                      className="bg-black"
-                    >
-                      {cat}
-                    </option>
-
-                  )
-                )}
-
-              </select>
-
-            </div>
-
           </div>
 
           <div
@@ -380,19 +238,15 @@ function Sales() {
             "
           >
 
-            {filteredProducts.map(
-              (product) => (
+            {products.map((product) => (
 
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  addToCart={
-                    addToCart
-                  }
-                />
+              <ProductCard
+                key={product.id}
+                product={product}
+                addToCart={addToCart}
+              />
 
-              )
-            )}
+            ))}
 
           </div>
 
@@ -444,6 +298,26 @@ function Sales() {
               />
 
             ))}
+
+          </div>
+
+          <div className="mt-8">
+
+            <h3
+              className="
+                text-xl
+                font-black
+                mb-4
+              "
+            >
+              Cliente
+            </h3>
+
+            <p className="text-sm text-gray-400">
+              Ingresa los datos del cliente
+              directamente en el modal de
+              factura al finalizar la venta.
+            </p>
 
           </div>
 
@@ -537,6 +411,8 @@ function Sales() {
                 text-black
                 font-bold
                 text-lg
+                hover:scale-[1.02]
+                transition
               "
             >
               Finalizar Venta
@@ -549,10 +425,16 @@ function Sales() {
       </div>
 
       <InvoiceModal
-        sale={invoice}
+        sale={draftSale}
         onClose={() =>
-          setInvoice(null)
+          setDraftSale(null)
         }
+        onSaleComplete={() => {
+          setCart([]);
+          setDraftSale(null);
+          loadProducts();
+          toast.success("Venta completada");
+        }}
       />
 
     </MainLayout>

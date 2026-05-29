@@ -23,8 +23,6 @@ import EditProductModal from "../components/inventory/EditProductModal";
 
 import DeleteConfirmModal from "../components/ui/DeleteConfirmModal";
 
-import InventoryMovements from "../components/inventory/InventoryMovements";
-
 function Inventory({
   currentModule,
   setCurrentModule,
@@ -235,7 +233,7 @@ function Inventory({
                 text-sm
               "
             >
-              CASA MAÍZ
+              CASA MAÍZ ERP
             </div>
 
           </div>
@@ -350,11 +348,12 @@ function Inventory({
 
               <div
                 className="
-                  bg-white
-                  text-black
+                  bg-gradient-to-r
+                  from-black
+                  to-gray-900
+                  text-white
                   rounded-3xl
                   p-6
-                  border
                 "
               >
 
@@ -761,19 +760,6 @@ function Inventory({
               )}
 
             </div>
-
-          </div>
-
-          {/* MOVEMENTS */}
-
-          <div className="mt-10">
-
-            <InventoryMovements
-              products={products}
-              onMovementCreated={
-                refreshProducts
-              }
-            />
 
           </div>
 

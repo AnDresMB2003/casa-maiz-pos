@@ -1,366 +1,127 @@
-const db =
-  require("../../config/db");
+const db = require("../../config/db");
 
-/* =========================================
-   GET DASHBOARD STATS
-========================================= */
+// GET DASHBOARD STATS
+const getDashboardStats = (req, res) => {
 
-const getDashboardStats =
-  (req, res) => {
+  const stats = {};
 
-    const stats = {};
+  // TOTAL SALES
+  db.get(
+    `
+      SELECT COUNT(*) as totalSales
+      FROM sales
+    `,
+    [],
+    (err, salesResult) => {
 
-    /* =========================================
-       TOTAL SALES
-    ========================================= */
+      if (err) {
 
-    db.get(
-      `
-        SELECT COUNT(*) as totalSales
-        FROM sales
-      `,
-      [],
+        return res.status(500).json({
+          error: err.message,
+        });
+      }
 
-      (
-        err,
-        salesResult
-      ) => {
+      stats.totalSales =
+        salesResult.totalSales;
 
-        if (err) {
+      // TOTAL REVENUE
+      db.get(
+        `
+          SELECT SUM(total) as revenue
+          FROM sales
+        `,
+        [],
+        (err, revenueResult) => {
 
-          return res
-            .status(500)
-            .json({
-              error:
-                err.message,
+          if (err) {
+
+            return res.status(500).json({
+              error: err.message,
             });
-        }
+          }
 
-        stats.totalSales =
-          salesResult.totalSales || 0;
+          stats.totalRevenue =
+            revenueResult.revenue || 0;
 
-        /* =========================================
-           TOTAL REVENUE
-        ========================================= */
+          // PRODUCTS
+          db.get(
+            `
+              SELECT COUNT(*) as totalProducts
+              FROM products
+            `,
+            [],
+            (err, productResult) => {
 
-        db.get(
-          `
-            SELECT
-              SUM(total) as revenue
+              if (err) {
 
-            FROM sales
-          `,
-          [],
-
-          (
-            err,
-            revenueResult
-          ) => {
-
-            if (err) {
-
-              return res
-                .status(500)
-                .json({
-                  error:
-                    err.message,
+                return res.status(500).json({
+                  error: err.message,
                 });
-            }
+              }
 
-            stats.totalRevenue =
-              revenueResult.revenue || 0;
+              stats.totalProducts =
+                productResult.totalProducts;
 
-            /* =========================================
-               PRODUCTS
-            ========================================= */
+              // LOW STOCK
+              db.get(
+                `
+                  SELECT COUNT(*) as lowStock
+                  FROM products
+                  WHERE stock <= 5
+                `,
+                [],
+                (
+                  err,
+                  lowStockResult
+                ) => {
 
-            db.get(
-              `
-                SELECT
-                  COUNT(*) as totalProducts
+                  if (err) {
 
-                FROM products
-              `,
-              [],
-
-              (
-                err,
-                productResult
-              ) => {
-
-                if (err) {
-
-                  return res
-                    .status(500)
-                    .json({
-                      error:
-                        err.message,
+                    return res.status(500).json({
+                      error: err.message,
                     });
-                }
+                  }
 
-                stats.totalProducts =
-                  productResult.totalProducts || 0;
+                  stats.lowStock =
+                    lowStockResult.lowStock;
 
-                /* =========================================
-                   LOW STOCK
-                ========================================= */
+                  // RECENT SALES
+                  db.all(
+                    `
+                      SELECT *
+                      FROM sales
+                      ORDER BY id DESC
+                      LIMIT 5
+                    `,
+                    [],
+                    (
+                      err,
+                      recentSales
+                    ) => {
 
-                db.get(
-                  `
-                    SELECT
-                      COUNT(*) as lowStock
+                      if (err) {
 
-                    FROM products
-
-                    WHERE stock <= 5
-                  `,
-                  [],
-
-                  (
-                    err,
-                    lowStockResult
-                  ) => {
-
-                    if (err) {
-
-                      return res
-                        .status(500)
-                        .json({
+                        return res.status(500).json({
                           error:
                             err.message,
                         });
-                    }
-
-                    stats.lowStock =
-                      lowStockResult.lowStock || 0;
-
-                    /* =========================================
-                       TODAY SALES
-                    ========================================= */
-
-                    db.get(
-                      `
-                        SELECT
-                          SUM(total) as todaySales
-
-                        FROM sales
-
-                        WHERE date(created_at) =
-                        date('now','localtime')
-                      `,
-                      [],
-
-                      (
-                        err,
-                        todayResult
-                      ) => {
-
-                        if (err) {
-
-                          return res
-                            .status(500)
-                            .json({
-                              error:
-                                err.message,
-                            });
-                        }
-
-                        stats.todaySales =
-                          todayResult.todaySales || 0;
-
-                        /* =========================================
-                           TOP CUSTOMER
-                        ========================================= */
-
-                        db.get(
-                          `
-                            SELECT
-
-                              customers.name,
-
-                              SUM(sales.total)
-                              as total
-
-                            FROM sales
-
-                            LEFT JOIN customers
-                              ON sales.customer_id =
-                              customers.id
-
-                            GROUP BY customers.id
-
-                            ORDER BY total DESC
-
-                            LIMIT 1
-                          `,
-                          [],
-
-                          (
-                            err,
-                            topCustomer
-                          ) => {
-
-                            if (err) {
-
-                              return res
-                                .status(500)
-                                .json({
-                                  error:
-                                    err.message,
-                                });
-                            }
-
-                            stats.topCustomer =
-                              topCustomer || null;
-
-                            /* =========================================
-                               BEST PRODUCT
-                            ========================================= */
-
-                            db.get(
-                              `
-                                SELECT
-
-                                  product_name,
-
-                                  SUM(quantity)
-                                  as sold
-
-                                FROM sale_items
-
-                                GROUP BY product_name
-
-                                ORDER BY sold DESC
-
-                                LIMIT 1
-                              `,
-                              [],
-
-                              (
-                                err,
-                                bestProduct
-                              ) => {
-
-                                if (err) {
-
-                                  return res
-                                    .status(500)
-                                    .json({
-                                      error:
-                                        err.message,
-                                    });
-                                }
-
-                                stats.bestProduct =
-                                  bestProduct || null;
-
-                                /* =========================================
-                                   CHART DATA
-                                ========================================= */
-
-                                db.all(
-                                  `
-                                    SELECT
-
-                                      date(created_at)
-                                      as date,
-
-                                      SUM(total)
-                                      as total
-
-                                    FROM sales
-
-                                    GROUP BY date(created_at)
-
-                                    ORDER BY date(created_at) ASC
-
-                                    LIMIT 7
-                                  `,
-                                  [],
-
-                                  (
-                                    err,
-                                    chartData
-                                  ) => {
-
-                                    if (err) {
-
-                                      return res
-                                        .status(500)
-                                        .json({
-                                          error:
-                                            err.message,
-                                        });
-                                    }
-
-                                    stats.chartData =
-                                      chartData || [];
-
-                                    /* =========================================
-                                       RECENT SALES
-                                    ========================================= */
-
-                                    db.all(
-                                      `
-                                        SELECT
-
-                                          sales.*,
-
-                                          customers.name
-                                          AS customer_name
-
-                                        FROM sales
-
-                                        LEFT JOIN customers
-                                          ON sales.customer_id =
-                                          customers.id
-
-                                        ORDER BY sales.id DESC
-
-                                        LIMIT 5
-                                      `,
-                                      [],
-
-                                      (
-                                        err,
-                                        recentSales
-                                      ) => {
-
-                                        if (err) {
-
-                                          return res
-                                            .status(500)
-                                            .json({
-                                              error:
-                                                err.message,
-                                            });
-                                        }
-
-                                        stats.recentSales =
-                                          recentSales || [];
-
-                                        res.json(
-                                          stats
-                                        );
-                                      }
-                                    );
-                                  }
-                                );
-                              }
-                            );
-                          }
-                        );
                       }
-                    );
-                  }
-                );
-              }
-            );
-          }
-        );
-      }
-    );
-  };
+
+                      stats.recentSales =
+                        recentSales;
+
+                      res.json(stats);
+                    }
+                  );
+                }
+              );
+            }
+          );
+        }
+      );
+    }
+  );
+};
 
 module.exports = {
   getDashboardStats,

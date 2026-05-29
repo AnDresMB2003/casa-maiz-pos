@@ -1,13 +1,19 @@
-const sqlite3 = require("sqlite3").verbose();
+const sqlite3 =
+  require("sqlite3").verbose();
 
-const path = require("path");
+const path =
+  require("path");
 
-const dbPath = path.resolve(
-  __dirname,
-  "../database/casamaiz.db"
-);
+const dbPath =
+  path.resolve(
+    __dirname,
+    "../database/casamaiz.db"
+  );
 
-const db = new sqlite3.Database(dbPath);
+const db =
+  new sqlite3.Database(
+    dbPath
+  );
 
 // PRODUCTS
 db.run(`
@@ -43,7 +49,7 @@ db.run(`
   )
 `);
 
-// USERS TABLE
+// USERS
 db.run(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,4 +61,3 @@ db.run(`
 `);
 
 module.exports = db;
-

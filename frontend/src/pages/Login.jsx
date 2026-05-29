@@ -2,23 +2,17 @@ import {
   useState,
 } from "react";
 
-import axios from "axios";
-
 import {
   useNavigate,
 } from "react-router-dom";
 
 import toast from "react-hot-toast";
-import useAuth from "../context/useAuth";
 
+import useAuth from "../context/useAuth";
 function Login() {
 
   const navigate =
     useNavigate();
-
-const {
-  login,
-} = useAuth();
 
   const [form, setForm] =
     useState({
@@ -28,6 +22,9 @@ const {
       password: "",
 
     });
+  const {
+  login,
+} = useAuth();
 
   const [loading, setLoading] =
     useState(false);
@@ -54,19 +51,18 @@ const {
 
       setLoading(true);
 
-      const response =
-        await axios.post(
-
-          "http://localhost:4000/api/auth/login",
-
-          form
-        );
-
-      // SAVE TOKEN
-      login(
-        response.data.token,
-        response.data.user
+      const result = await login(
+        form.email,
+        form.password
       );
+
+      if (!result.success) {
+        toast.error(
+          result.message ||
+            "Error iniciando sesión"
+        );
+        return;
+      }
 
       toast.success(
         "Bienvenido 🔥"
@@ -77,10 +73,8 @@ const {
     } catch (error) {
 
       toast.error(
-
-        error.response?.data?.error ||
-
-        "Error iniciando sesión"
+        error.message ||
+          "Error iniciando sesión"
       );
 
     } finally {

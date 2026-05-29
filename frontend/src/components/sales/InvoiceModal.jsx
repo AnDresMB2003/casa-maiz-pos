@@ -9,6 +9,7 @@ import toast from "react-hot-toast";
 function InvoiceModal({
   sale,
   onClose,
+  onSaleComplete,
 }) {
 
   const [customerName, setCustomerName] =
@@ -29,523 +30,372 @@ function InvoiceModal({
   if (!sale)
     return null;
 
-  const subtotal =
-    sale.total / 1.19;
-
-  const iva =
-    sale.total - subtotal;
-
   async function handleGenerateInvoice() {
+
+    if (!sale) {
+      toast.error("No hay venta para facturar");
+      return;
+    }
 
     try {
 
       setLoading(true);
 
-      const hasCustomerData =
-        customerName.trim() ||
-        customerDocument.trim() ||
-        customerPhone.trim() ||
-        customerEmail.trim();
-
       const finalCustomer =
-        hasCustomerData
+        customerName.trim()
           ? {
-              name:
-                customerName.trim() ||
-                "Cliente",
-
+              name: customerName,
               document:
-                customerDocument.trim() ||
-                "",
-
+                customerDocument ||
+                "222222222222",
               phone:
-                customerPhone.trim() ||
-                "",
-
+                customerPhone ||
+                "No informado",
               email:
-                customerEmail.trim() ||
-                "",
+                customerEmail ||
+                "No informado",
             }
           : {
-              name:
-                "CONSUMIDOR FINAL",
-
-              document:
-                "222222222",
-
-              phone:
-                "",
-
-              email:
-                "",
+              name: "CONSUMIDOR FINAL",
+              document: "222222222222",
+              phone: "No informado",
+              email: "No informado",
             };
 
       const response =
         await axios.post(
           "http://localhost:4000/api/sales",
           {
-            customer:
-              finalCustomer,
-
-            cart:
-              sale.items.map(
-                (item) => ({
-                  id:
-                    item.id ||
-                    item.product_id,
-
-                  name:
-                    item.name ||
-                    item.product_name,
-
-                  quantity:
-                    item.quantity,
-
-                  price:
-                    item.price,
-                })
-              ),
-
-            subtotal,
-
-            iva,
-
-            total:
-              sale.total,
+            customer: finalCustomer,
+            cart: sale.cart,
+            subtotal: sale.subtotal,
+            iva: sale.iva,
+            total: sale.total,
           }
         );
 
-      const {
-        invoiceNumber,
-      } = response.data;
-
-      const now =
-        new Date();
-
-      const printWindow =
-        window.open(
-          "",
-          "_blank",
-          "width=900,height=1000"
+      const invoiceResponse =
+        await axios.get(
+          `http://localhost:4000/api/sales/${response.data.saleId}`
         );
 
-      printWindow.document.write(`
-        <html>
+      const printedSale =
+        invoiceResponse.data;
 
-        <head>
+      const printWindow = window.open(
+        "",
+        "_blank",
+        "width=900,height=1000"
+      );
 
-          <title>
-            Factura
-          </title>
+      if (!printWindow) {
+        toast.error(
+          "El navegador bloqueó la ventana de impresión"
+        );
+        onSaleComplete?.();
+        onClose();
+        return;
+      }
 
-          <style>
+      const invoiceDate =
+        new Date(
+          printedSale.created_at
+        ).toLocaleDateString();
+      const invoiceTime =
+        new Date(
+          printedSale.created_at
+        ).toLocaleTimeString();
 
-            * {
-              box-sizing: border-box;
-            }
+      const html = `
+        <!DOCTYPE html>
+        <html lang="es">
+          <head>
+            <meta charset="utf-8" />
+            <title>Factura CASA MAÍZ</title>
+            <style>
+              * {
+                box-sizing: border-box;
+              }
 
-            body {
-              font-family: Arial, sans-serif;
-              color: black;
-              padding: 20px;
-              margin: 0;
-            }
-
-            .header {
-              display: flex;
-              justify-content: space-between;
-              align-items: flex-start;
-              border-bottom: 2px solid black;
-              padding-bottom: 20px;
-            }
-
-            .company h1 {
-              margin: 0;
-              font-size: 42px;
-              font-weight: 900;
-            }
-
-            .company p {
-              margin: 4px 0;
-              font-size: 14px;
-            }
-
-            .invoice-info {
-              text-align: right;
-            }
-
-            .invoice-number {
-              font-size: 28px;
-              font-weight: bold;
-              margin: 0;
-            }
-
-            .invoice-date {
-              margin-top: 10px;
-              font-size: 14px;
-            }
-
-            .section {
-              margin-top: 30px;
-            }
-
-            .section h3 {
-              margin-bottom: 15px;
-              font-size: 18px;
-            }
-
-            .customer-grid {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 10px;
-            }
-
-            .customer-item {
-              font-size: 14px;
-            }
-
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-top: 25px;
-            }
-
-            th {
-              background: #f2f2f2;
-              font-size: 14px;
-            }
-
-            th,
-            td {
-              border: 1px solid #ddd;
-              padding: 12px;
-            }
-
-            td {
-              font-size: 14px;
-            }
-
-            .right {
-              text-align: right;
-            }
-
-            .center {
-              text-align: center;
-            }
-
-            .totals {
-              width: 320px;
-              margin-left: auto;
-              margin-top: 25px;
-            }
-
-            .totals div {
-              display: flex;
-              justify-content: space-between;
-              padding: 8px 0;
-              font-size: 15px;
-            }
-
-            .grand-total {
-              font-size: 30px !important;
-              font-weight: 900;
-              border-top: 2px solid black;
-              margin-top: 10px;
-              padding-top: 12px;
-            }
-
-            .footer {
-              margin-top: 40px;
-              text-align: center;
-              font-size: 12px;
-            }
-
-            @media print {
+              html,
+              body {
+                margin: 0;
+                padding: 0;
+                font-family: Inter, Arial, sans-serif;
+                color: #111;
+                background: #fff;
+              }
 
               body {
-                padding: 10px;
+                padding: 20px;
+                font-size: 13px;
+                line-height: 1.5;
               }
 
-              @page {
-                size: auto;
-                margin: 8mm;
+              .invoice-wrapper {
+                max-width: 760px;
+                width: 100%;
+                margin: 0 auto;
               }
 
-            }
+              .header {
+                display: flex;
+                justify-content: space-between;
+                gap: 20px;
+                align-items: flex-start;
+                border-bottom: 1px solid #ddd;
+                padding-bottom: 18px;
+              }
 
-          </style>
+              .company h1 {
+                margin: 0;
+                font-size: 32px;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+              }
 
-        </head>
+              .company p,
+              .invoice-info p,
+              .customer-item p {
+                margin: 4px 0;
+                font-size: 12px;
+              }
 
-        <body>
+              .invoice-info {
+                text-align: right;
+                font-size: 12px;
+              }
 
-          <div class="header">
+              .invoice-number {
+                margin: 0;
+                font-size: 24px;
+                font-weight: 900;
+              }
 
-            <div class="company">
+              .section {
+                margin-top: 28px;
+              }
 
-              <h1>
-                CASA MAÍZ
-              </h1>
+              .section h3 {
+                margin: 0 0 14px;
+                font-size: 16px;
+                letter-spacing: 0.03em;
+              }
 
-              <p>
-                NIT:
-                901456789-1
-              </p>
+              .customer-grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+              }
 
-              <p>
-                Bogotá, Colombia
-              </p>
+              .customer-item {
+                background: #f8f8f8;
+                border-radius: 16px;
+                padding: 12px 14px;
+                font-size: 12px;
+              }
 
-              <p>
-                +57 300 000 0000
-              </p>
+              .customer-item strong {
+                display: block;
+                margin-bottom: 6px;
+                font-weight: 700;
+              }
 
-            </div>
+              table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+                page-break-inside: avoid;
+              }
 
-            <div class="invoice-info">
+              th,
+              td {
+                border: 1px solid #ddd;
+                padding: 10px 12px;
+                font-size: 12px;
+              }
 
-              <p class="invoice-number">
-                ${invoiceNumber}
-              </p>
+              th {
+                background: #f4f4f4;
+                text-align: left;
+                font-weight: 700;
+              }
 
-              <p class="invoice-date">
+              td.right {
+                text-align: right;
+              }
 
-                ${now.toLocaleDateString(
-                  "es-CO"
-                )}
+              td.center {
+                text-align: center;
+              }
 
-                -
+              tbody tr {
+                page-break-inside: avoid;
+              }
 
-                ${now.toLocaleTimeString(
-                  "es-CO"
-                )}
+              .totals {
+                width: 100%;
+                max-width: 380px;
+                margin-left: auto;
+                margin-top: 24px;
+                border-top: 1px solid #ddd;
+                padding-top: 14px;
+              }
 
-              </p>
+              .totals-row {
+                display: flex;
+                justify-content: space-between;
+                padding: 8px 0;
+                font-size: 13px;
+              }
 
-            </div>
+              .grand-total {
+                display: flex;
+                justify-content: space-between;
+                margin-top: 16px;
+                padding-top: 16px;
+                border-top: 2px solid #111;
+                font-size: 18px;
+                font-weight: 900;
+              }
 
-          </div>
+              .footer {
+                margin-top: 34px;
+                text-align: center;
+                font-size: 12px;
+                color: #555;
+              }
 
-          <div class="section">
+              @media print {
+                body {
+                  padding: 10px;
+                }
 
-            <h3>
-              DATOS DEL CLIENTE
-            </h3>
+                @page {
+                  size: A4 portrait;
+                  margin: 10mm;
+                }
 
-            <div class="customer-grid">
-
-              <div class="customer-item">
-
-                <strong>
-                  Nombre:
-                </strong>
-
-                ${finalCustomer.name}
-
+                .invoice-wrapper {
+                  width: 100%;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="invoice-wrapper">
+              <div class="header">
+                <div class="company">
+                  <h1>CASA MAÍZ</h1>
+                  <p>NIT: 901456789-1</p>
+                  <p>Bogotá, Colombia</p>
+                  <p>+57 300 000 0000</p>
+                </div>
+                <div class="invoice-info">
+                  <p class="invoice-number">${printedSale.invoice_number}</p>
+                  <p>Fecha: ${invoiceDate}</p>
+                  <p>Hora: ${invoiceTime}</p>
+                </div>
               </div>
 
-              <div class="customer-item">
-
-                <strong>
-                  Documento:
-                </strong>
-
-                ${finalCustomer.document}
-
+              <div class="section">
+                <h3>DATOS DEL CLIENTE</h3>
+                <div class="customer-grid">
+                  <div class="customer-item">
+                    <strong>Nombre</strong>
+                    <p>${printedSale.customer_name || finalCustomer.name}</p>
+                  </div>
+                  <div class="customer-item">
+                    <strong>Documento</strong>
+                    <p>${printedSale.customer_document || finalCustomer.document}</p>
+                  </div>
+                  <div class="customer-item">
+                    <strong>Celular</strong>
+                    <p>${printedSale.customer_phone || finalCustomer.phone}</p>
+                  </div>
+                  <div class="customer-item">
+                    <strong>Correo</strong>
+                    <p>${printedSale.customer_email || finalCustomer.email}</p>
+                  </div>
+                </div>
               </div>
 
-              <div class="customer-item">
-
-                <strong>
-                  Celular:
-                </strong>
-
-                ${finalCustomer.phone || "-"}
-
-              </div>
-
-              <div class="customer-item">
-
-                <strong>
-                  Correo:
-                </strong>
-
-                ${finalCustomer.email || "-"}
-
-              </div>
-
-            </div>
-
-          </div>
-
-          <table>
-
-            <thead>
-
-              <tr>
-
-                <th>
-                  Producto
-                </th>
-
-                <th>
-                  Cant.
-                </th>
-
-                <th>
-                  Unitario
-                </th>
-
-                <th>
-                  Total
-                </th>
-
-              </tr>
-
-            </thead>
-
-            <tbody>
-
-              ${sale.items.map(
-                (item) => `
+              <table>
+                <thead>
                   <tr>
-
-                    <td>
-                      ${
-                        item.name ||
-                        item.product_name
-                      }
-                    </td>
-
-                    <td class="center">
-                      ${item.quantity}
-                    </td>
-
-                    <td class="right">
-                      $${Number(
-                        item.price
-                      ).toLocaleString(
-                        "es-CO"
-                      )}
-                    </td>
-
-                    <td class="right">
-                      $${(
-                        item.price *
-                        item.quantity
-                      ).toLocaleString(
-                        "es-CO"
-                      )}
-                    </td>
-
+                    <th>Producto</th>
+                    <th class="center">Cant.</th>
+                    <th class="right">Unitario</th>
+                    <th class="right">Total</th>
                   </tr>
-                `
-              ).join("")}
-
-            </tbody>
-
-          </table>
-
-          <div class="totals">
-
-            <div>
-
-              <span>
-                SUBTOTAL
-              </span>
-
-              <span>
-
-                $${subtotal.toLocaleString(
-                  "es-CO",
-                  {
-                    maximumFractionDigits: 0,
+                </thead>
+                <tbody>
+                  ${
+                    (printedSale.items || sale.cart || [])
+                      .map(
+                        (item) => `
+                          <tr>
+                            <td>${item.product_name || item.name}</td>
+                            <td class="center">${item.quantity}</td>
+                            <td class="right">$${item.price.toLocaleString(
+                              "es-CO"
+                            )}</td>
+                            <td class="right">$${(
+                              item.price * item.quantity
+                            ).toLocaleString("es-CO")}</td>
+                          </tr>
+                        `
+                      )
+                      .join("")
                   }
-                )}
+                </tbody>
+              </table>
 
-              </span>
-
-            </div>
-
-            <div>
-
-              <span>
-                IVA 19%
-              </span>
-
-              <span>
-
-                $${iva.toLocaleString(
-                  "es-CO",
-                  {
+              <div class="totals">
+                <div class="totals-row">
+                  <span>SUBTOTAL</span>
+                  <span>$${sale.subtotal.toLocaleString("es-CO", {
                     maximumFractionDigits: 0,
-                  }
-                )}
+                  })}</span>
+                </div>
+                <div class="totals-row">
+                  <span>IVA 19%</span>
+                  <span>$${sale.iva.toLocaleString("es-CO", {
+                    maximumFractionDigits: 0,
+                  })}</span>
+                </div>
+                <div class="grand-total">
+                  <span>TOTAL</span>
+                  <span>$${sale.total.toLocaleString("es-CO")}</span>
+                </div>
+              </div>
 
-              </span>
-
+              <div class="footer">
+                <p>Gracias por comprar en CASA MAÍZ</p>
+                <p>Factura POS</p>
+              </div>
             </div>
-
-            <div class="grand-total">
-
-              <span>
-                TOTAL
-              </span>
-
-              <span>
-
-                $${sale.total.toLocaleString(
-                  "es-CO"
-                )}
-
-              </span>
-
-            </div>
-
-          </div>
-
-          <div class="footer">
-
-            <p>
-              Gracias por comprar
-              en CASA MAÍZ
-            </p>
-
-            <p>
-              Factura POS
-            </p>
-
-          </div>
-
-        </body>
-
+          </body>
         </html>
-      `);
+      `;
 
+      printWindow.document.write(html);
       printWindow.document.close();
+      printWindow.focus();
 
-      setTimeout(() => {
-
-        printWindow.print();
-
-      }, 500);
-
-      toast.success(
-        "Factura generada correctamente"
-      );
-
+      onSaleComplete?.();
       onClose();
 
+      printWindow.onload = () => {
+        printWindow.print();
+        printWindow.close();
+      };
+
+      toast.success("Factura generada correctamente");
     } catch (error) {
-
       console.log(error);
-
-      toast.error(
-        "Error generando factura"
-      );
-
+      toast.error("Error generando factura");
     } finally {
-
       setLoading(false);
     }
   }
@@ -599,12 +449,10 @@ function InvoiceModal({
             }
             className="
               border
-              border-gray-300
               p-3
               rounded-xl
               text-black
               bg-white
-              outline-none
             "
           />
 
@@ -619,12 +467,10 @@ function InvoiceModal({
             }
             className="
               border
-              border-gray-300
               p-3
               rounded-xl
               text-black
               bg-white
-              outline-none
             "
           />
 
@@ -639,12 +485,10 @@ function InvoiceModal({
             }
             className="
               border
-              border-gray-300
               p-3
               rounded-xl
               text-black
               bg-white
-              outline-none
             "
           />
 
@@ -659,12 +503,10 @@ function InvoiceModal({
             }
             className="
               border
-              border-gray-300
               p-3
               rounded-xl
               text-black
               bg-white
-              outline-none
             "
           />
 
@@ -685,12 +527,33 @@ function InvoiceModal({
         <div
           className="
             flex
-            justify-end
+            items-center
+            justify-between
             mt-8
           "
         >
 
           <button
+            type="button"
+            onClick={onClose}
+            className="
+              rounded-xl
+              border
+              border-black/10
+              px-5
+              py-3
+              font-bold
+              text-black
+              bg-white
+              hover:bg-black/5
+              transition
+            "
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="button"
             onClick={
               handleGenerateInvoice
             }

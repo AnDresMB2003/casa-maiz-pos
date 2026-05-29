@@ -15,13 +15,7 @@ const db =
 
 router.get("/", (req, res) => {
 
-  const {
-    search = "",
-    startDate,
-    endDate,
-  } = req.query;
-
-  let query = `
+  const query = `
     SELECT
 
       sales.*,
@@ -30,13 +24,7 @@ router.get("/", (req, res) => {
       AS customer_name,
 
       customers.document
-      AS customer_document,
-
-      customers.phone
-      AS customer_phone,
-
-      customers.email
-      AS customer_email
+      AS customer_document
 
     FROM sales
 
@@ -44,60 +32,12 @@ router.get("/", (req, res) => {
       ON sales.customer_id =
       customers.id
 
-    WHERE 1 = 1
-  `;
-
-  const params = [];
-
-  /* SEARCH */
-
-  if (search.trim()) {
-
-    query += `
-      AND (
-        customers.name LIKE ?
-        OR customers.document LIKE ?
-        OR sales.invoice_number LIKE ?
-      )
-    `;
-
-    params.push(
-      `%${search}%`,
-      `%${search}%`,
-      `%${search}%`
-    );
-  }
-
-  /* DATE FILTER */
-
-  if (startDate) {
-
-    query += `
-      AND DATE(sales.created_at)
-      >= DATE(?)
-    `;
-
-    params.push(startDate);
-  }
-
-  if (endDate) {
-
-    query += `
-      AND DATE(sales.created_at)
-      <= DATE(?)
-    `;
-
-    params.push(endDate);
-  }
-
-  query += `
     ORDER BY sales.id DESC
   `;
 
   db.all(
     query,
-    params,
-
+    [],
     (err, rows) => {
 
       if (err) {
@@ -123,7 +63,6 @@ router.get("/", (req, res) => {
 
 router.get(
   "/:id",
-
   (req, res) => {
 
     const saleId =
@@ -238,7 +177,6 @@ router.get(
 
 router.post(
   "/",
-
   (req, res) => {
 
     const {
@@ -262,223 +200,157 @@ router.post(
         });
     }
 
-    /* =========================================
-       VALIDATE STOCK FIRST
-    ========================================= */
+    const customerName =
+      customer?.name ||
+      "Consumidor final";
 
-    const productIds =
-      cart.map(
-        (item) => item.id
-      );
+    const customerDocument =
+      customer?.document ||
+      "222222222";
 
-    const placeholders =
-      productIds
-        .map(() => "?")
-        .join(",");
+    const customerPhone =
+      customer?.phone ||
+      "";
 
-    db.all(
+    const customerEmail =
+      customer?.email ||
+      "";
+
+    const invoiceNumber =
+      `FAC-${Date.now()}`;
+
+    db.get(
       `
-      SELECT
-        id,
-        name,
-        stock
-      FROM products
-      WHERE id IN (${placeholders})
+      SELECT *
+
+      FROM customers
+
+      WHERE document = ?
     `,
-      productIds,
+      [customerDocument],
 
       (
-        stockError,
-        products
+        customerErr,
+        existingCustomer
       ) => {
 
         if (
-          stockError
+          customerErr
         ) {
 
           console.log(
-            stockError
+            customerErr
           );
 
           return res
             .status(500)
             .json({
               error:
-                "Error validando stock",
+                "Error buscando cliente",
             });
         }
 
-        for (
-          const item of cart
+        function createSale(
+          customerId
         ) {
 
-          const product =
-            products.find(
-              (p) =>
-                p.id ===
-                item.id
-            );
-
-          if (
-            !product
-          ) {
-
-            return res
-              .status(404)
-              .json({
-                error:
-                  `Producto no encontrado: ${item.name}`,
-              });
-          }
-
-          if (
-            Number(
-              item.quantity
-            ) >
-            Number(
-              product.stock
+          db.run(
+            `
+            INSERT INTO sales (
+              customer_id,
+              subtotal,
+              iva,
+              total,
+              invoice_number,
+              created_at
             )
-          ) {
 
-            return res
-              .status(400)
-              .json({
-                error:
-                  `Stock insuficiente para ${product.name}`,
-              });
-          }
-        }
+            VALUES (?, ?, ?, ?, ?, datetime('now','localtime'))
+          `,
+            [
+              customerId,
+              subtotal,
+              iva,
+              total,
+              invoiceNumber,
+            ],
 
-        /* =========================================
-           CUSTOMER DATA
-        ========================================= */
-
-        const hasCustomerData =
-
-          customer?.name?.trim() ||
-          customer?.document?.trim() ||
-          customer?.phone?.trim() ||
-          customer?.email?.trim();
-
-        const customerName =
-          hasCustomerData
-            ? customer?.name?.trim()
-            : "Consumidor final";
-
-        const customerDocument =
-          hasCustomerData
-            ? customer?.document?.trim()
-            : `CF-${Date.now()}`;
-
-        const customerPhone =
-          hasCustomerData
-            ? customer?.phone?.trim()
-            : "";
-
-        const customerEmail =
-          hasCustomerData
-            ? customer?.email?.trim()
-            : "";
-
-        const invoiceNumber =
-          `FAC-${Date.now()}`;
-
-        /* =========================================
-           FIND CUSTOMER
-        ========================================= */
-
-        db.get(
-          `
-          SELECT *
-
-          FROM customers
-
-          WHERE document = ?
-        `,
-          [customerDocument],
-
-          (
-            customerErr,
-            existingCustomer
-          ) => {
-
-            if (
-              customerErr
+            function (
+              saleError
             ) {
 
-              console.log(
-                customerErr
-              );
+              if (
+                saleError
+              ) {
 
-              return res
-                .status(500)
-                .json({
-                  error:
-                    "Error buscando cliente",
-                });
-            }
-
-            /* =========================================
-               CREATE SALE FUNCTION
-            ========================================= */
-
-            function createSale(
-              customerId
-            ) {
-
-              db.run(
-                `
-                INSERT INTO sales (
-                  customer_id,
-                  subtotal,
-                  iva,
-                  total,
-                  invoice_number,
-                  created_at
-                )
-
-                VALUES (?, ?, ?, ?, ?, datetime('now','localtime'))
-              `,
-                [
-                  customerId,
-                  subtotal,
-                  iva,
-                  total,
-                  invoiceNumber,
-                ],
-
-                function (
+                console.log(
                   saleError
-                ) {
+                );
 
-                  if (
-                    saleError
-                  ) {
+                return res
+                  .status(500)
+                  .json({
+                    error:
+                      "Error creando venta",
+                  });
+              }
 
-                    console.log(
-                      saleError
-                    );
+              const saleId =
+                this.lastID;
 
-                    return res
-                      .status(500)
-                      .json({
-                        error:
-                          "Error creando venta",
-                      });
-                  }
+              let processed =
+                0;
 
-                  const saleId =
-                    this.lastID;
+              cart.forEach(
+                (
+                  item
+                ) => {
 
-                  let completed =
-                    0;
+                  db.get(
+                    `
+                    SELECT stock
 
-                  cart.forEach(
+                    FROM products
+
+                    WHERE id = ?
+                  `,
+                    [item.id],
+
                     (
-                      item
+                      stockError,
+                      product
                     ) => {
 
-                      /* INSERT ITEM */
+                      if (
+                        stockError ||
+                        !product
+                      ) {
+
+                        console.log(
+                          stockError
+                        );
+
+                        return;
+                      }
+
+                      if (
+                        Number(
+                          item.quantity
+                        ) >
+                        Number(
+                          product.stock
+                        )
+                      ) {
+
+                        return res
+                          .status(
+                            400
+                          )
+                          .json({
+                            error:
+                              `Stock insuficiente para ${item.name}`,
+                          });
+                      }
 
                       db.run(
                         `
@@ -498,24 +370,8 @@ router.post(
                           item.name,
                           item.quantity,
                           item.price,
-                        ],
-
-                        (
-                          itemError
-                        ) => {
-
-                          if (
-                            itemError
-                          ) {
-
-                            console.log(
-                              itemError
-                            );
-                          }
-                        }
+                        ]
                       );
-
-                      /* UPDATE STOCK */
 
                       db.run(
                         `
@@ -529,63 +385,13 @@ router.post(
                         [
                           item.quantity,
                           item.id,
-                        ],
-
-                        (
-                          updateError
-                        ) => {
-
-                          if (
-                            updateError
-                          ) {
-
-                            console.log(
-                              updateError
-                            );
-                          }
-                        }
+                        ]
                       );
 
-                      /* INVENTORY MOVEMENT */
-
-                      db.run(
-                        `
-                        INSERT INTO inventory_movements (
-                          product_id,
-                          type,
-                          quantity,
-                          reference,
-                          created_at
-                        )
-
-                        VALUES (?, ?, ?, ?, datetime('now','localtime'))
-                      `,
-                        [
-                          item.id,
-                          "SALE",
-                          item.quantity,
-                          invoiceNumber,
-                        ],
-
-                        (
-                          movementError
-                        ) => {
-
-                          if (
-                            movementError
-                          ) {
-
-                            console.log(
-                              movementError
-                            );
-                          }
-                        }
-                      );
-
-                      completed++;
+                      processed++;
 
                       if (
-                        completed ===
+                        processed ===
                         cart.length
                       ) {
 
@@ -603,104 +409,104 @@ router.post(
                 }
               );
             }
+          );
+        }
 
-            /* =========================================
-               UPDATE CUSTOMER
-            ========================================= */
+        /* =========================================
+           EXISTING CUSTOMER
+        ========================================= */
 
-            if (
-              existingCustomer
-            ) {
+        if (
+          existingCustomer
+        ) {
 
-              db.run(
-                `
-                UPDATE customers
+          db.run(
+            `
+              UPDATE customers
 
-                SET
-                  name = ?,
-                  phone = ?,
-                  email = ?
+              SET
+                name = ?,
+                phone = ?,
+                email = ?
 
-                WHERE id = ?
-              `,
-                [
-                  customerName,
-                  customerPhone,
-                  customerEmail,
-                  existingCustomer.id,
-                ],
+              WHERE id = ?
+            `,
+            [
+              customerName,
+              customerPhone,
+              customerEmail,
+              existingCustomer.id,
+            ],
 
-                (
+            (
+              updateError
+            ) => {
+
+              if (
+                updateError
+              ) {
+
+                console.log(
                   updateError
-                ) => {
+                );
+              }
 
-                  if (
-                    updateError
-                  ) {
-
-                    console.log(
-                      updateError
-                    );
-                  }
-
-                  createSale(
-                    existingCustomer.id
-                  );
-                }
-              );
-
-            } else {
-
-              /* =========================================
-                 CREATE CUSTOMER
-              ========================================= */
-
-              db.run(
-                `
-                INSERT INTO customers (
-                  name,
-                  document,
-                  phone,
-                  email
-                )
-
-                VALUES (?, ?, ?, ?)
-              `,
-                [
-                  customerName,
-                  customerDocument,
-                  customerPhone,
-                  customerEmail,
-                ],
-
-                function (
-                  insertError
-                ) {
-
-                  if (
-                    insertError
-                  ) {
-
-                    console.log(
-                      insertError
-                    );
-
-                    return res
-                      .status(500)
-                      .json({
-                        error:
-                          "Error creando cliente",
-                      });
-                  }
-
-                  createSale(
-                    this.lastID
-                  );
-                }
+              createSale(
+                existingCustomer.id
               );
             }
-          }
-        );
+          );
+
+        } else {
+
+          /* =========================================
+             CREATE CUSTOMER
+          ========================================= */
+
+          db.run(
+            `
+            INSERT INTO customers (
+              name,
+              document,
+              phone,
+              email
+            )
+
+            VALUES (?, ?, ?, ?)
+          `,
+            [
+              customerName,
+              customerDocument,
+              customerPhone,
+              customerEmail,
+            ],
+
+            function (
+              insertError
+            ) {
+
+              if (
+                insertError
+              ) {
+
+                console.log(
+                  insertError
+                );
+
+                return res
+                  .status(500)
+                  .json({
+                    error:
+                      "Error creando cliente",
+                  });
+              }
+
+              createSale(
+                this.lastID
+              );
+            }
+          );
+        }
       }
     );
   }

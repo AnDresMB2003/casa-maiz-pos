@@ -1,71 +1,125 @@
-import { Minus, Plus } from "lucide-react";
-
 function CartItem({
   item,
-  onIncrease,
-  onDecrease,
+  increaseQty,
+  decreaseQty,
+  removeItem,
 }) {
+
   return (
     <div
       className="
-        flex
-        items-center
-        justify-between
-        rounded-3xl
-        bg-white/[0.03]
+        rounded-2xl
         border
-        border-white/[0.05]
+        border-white/10
+        bg-black/20
         p-4
       "
     >
-      <div>
-        <h3 className="font-bold text-lg">
-          {item.name}
-        </h3>
 
-        <p className="text-gray-500 mt-1">
-          ${item.price.toLocaleString()}
+      <div
+        className="
+          flex
+          items-center
+          justify-between
+          gap-3
+        "
+      >
+
+        <div>
+
+          <h4 className="font-bold">
+            {item.name}
+          </h4>
+
+          <p className="text-sm text-gray-500">
+            $
+            {Number(
+              item.price
+            ).toLocaleString()}
+          </p>
+
+        </div>
+
+        <button
+          onClick={() =>
+            removeItem(item.id)
+          }
+          className="
+            text-red-400
+            text-sm
+          "
+        >
+          Eliminar
+        </button>
+
+      </div>
+
+      <div
+        className="
+          flex
+          items-center
+          justify-between
+          mt-4
+        "
+      >
+
+        <div
+          className="
+            flex
+            items-center
+            gap-3
+          "
+        >
+
+          <button
+            onClick={() =>
+              decreaseQty(item.id)
+            }
+            className="
+              w-8
+              h-8
+              rounded-full
+              bg-white/10
+            "
+          >
+            -
+          </button>
+
+          <span className="font-bold">
+            {item.quantity}
+          </span>
+
+          <button
+            onClick={() =>
+              increaseQty(item.id)
+            }
+            className="
+              w-8
+              h-8
+              rounded-full
+              bg-white/10
+            "
+          >
+            +
+          </button>
+
+        </div>
+
+        <p
+          className="
+            font-black
+            text-[#EAB308]
+          "
+        >
+          $
+          {(
+            item.price *
+            item.quantity
+          ).toLocaleString()}
         </p>
-      </div>
-
-      <div className="flex items-center gap-3">
-
-        <button
-          onClick={() => onDecrease(item.id)}
-          className="
-            w-10
-            h-10
-            rounded-xl
-            bg-white/[0.04]
-            flex
-            items-center
-            justify-center
-          "
-        >
-          <Minus size={18} />
-        </button>
-
-        <span className="text-xl font-bold w-8 text-center">
-          {item.quantity}
-        </span>
-
-        <button
-          onClick={() => onIncrease(item.id)}
-          className="
-            w-10
-            h-10
-            rounded-xl
-            bg-[#EAB308]
-            text-black
-            flex
-            items-center
-            justify-center
-          "
-        >
-          <Plus size={18} />
-        </button>
 
       </div>
+
     </div>
   );
 }

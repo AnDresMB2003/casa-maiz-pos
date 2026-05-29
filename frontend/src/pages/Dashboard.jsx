@@ -1,5 +1,4 @@
 import {
-  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -17,9 +16,6 @@ import {
   ShoppingCart,
   Package,
   AlertTriangle,
-  Crown,
-  TrendingUp,
-  Box,
 } from "lucide-react";
 
 import api from "../services/api";
@@ -31,229 +27,89 @@ function Dashboard() {
   const [stats, setStats] =
     useState(null);
 
-  const [loading, setLoading] =
-    useState(true);
-
-  /* =========================================
-     LOAD DASHBOARD
-  ========================================= */
-
-  useEffect(() => {
-
-    loadStats();
-
-  }, []);
-
+  // LOAD STATS
   async function loadStats() {
 
     try {
 
-      setLoading(true);
-
       const response =
-        await api.get(
-          "/dashboard"
-        );
+        await api.get("/dashboard");
 
-      setStats(
-        response.data
-      );
+      setStats(response.data);
 
-    } catch (error) {
-
-      console.log(error);
+    } catch {
 
       toast.error(
         "Error cargando dashboard"
       );
-
-    } finally {
-
-      setLoading(false);
     }
   }
 
-  /* =========================================
-     DASHBOARD CARDS
-  ========================================= */
+  // AUTO LOAD
+  if (!stats) {
+    loadStats();
+  }
 
-  const cards =
-    useMemo(() => {
+  // CARDS
+  const cards = useMemo(() => {
 
-      if (!stats)
-        return [];
+    if (!stats) return [];
 
-      return [
+    return [
 
-        {
-          title:
-            "Ingresos",
-          value:
-            `$${Number(
-              stats.totalRevenue || 0
-            ).toLocaleString(
-              "es-CO"
-            )}`,
-          icon: (
-            <DollarSign
-              size={36}
-            />
-          ),
-          color:
-            "#EAB308",
-          percentage:
-            "Total",
-        },
+      {
+        title: "Ingresos",
+        value: `$${Number(
+          stats.totalRevenue
+        ).toLocaleString()}`,
+        icon: (
+          <DollarSign size={36} />
+        ),
+        color: "#EAB308",
+        percentage: "12.5%",
+      },
 
-        {
-          title:
-            "Ventas",
-          value:
-            stats.totalSales || 0,
-          icon: (
-            <ShoppingCart
-              size={36}
-            />
-          ),
-          color:
-            "#22C55E",
-          percentage:
-            "Registradas",
-        },
+      {
+        title: "Ventas",
+        value: stats.totalSales,
+        icon: (
+          <ShoppingCart size={36} />
+        ),
+        color: "#22C55E",
+        percentage: "8.2%",
+      },
 
-        {
-          title:
-            "Productos",
-          value:
-            stats.totalProducts || 0,
-          icon: (
-            <Package
-              size={36}
-            />
-          ),
-          color:
-            "#3B82F6",
-          percentage:
-            "Activos",
-        },
+      {
+        title: "Productos",
+        value: stats.totalProducts,
+        icon: (
+          <Package size={36} />
+        ),
+        color: "#3B82F6",
+        percentage: "3.1%",
+      },
 
-        {
-          title:
-            "Stock Bajo",
-          value:
-            stats.lowStock || 0,
-          icon: (
-            <AlertTriangle
-              size={36}
-            />
-          ),
-          color:
-            "#EF4444",
-          percentage:
-            "Crítico",
-        },
+      {
+        title: "Stock Bajo",
+        value: stats.lowStock,
+        icon: (
+          <AlertTriangle size={36} />
+        ),
+        color: "#EF4444",
+        percentage: "2.4%",
+      },
 
-        {
-          title:
-            "Ventas Hoy",
-          value:
-            `$${Number(
-              stats.todaySales || 0
-            ).toLocaleString(
-              "es-CO"
-            )}`,
-          icon: (
-            <TrendingUp
-              size={36}
-            />
-          ),
-          color:
-            "#F97316",
-          percentage:
-            "Hoy",
-        },
+    ];
 
-        {
-          title:
-            "Mejor Cliente",
-          value:
-            stats
-              .topCustomer
-              ?.name ||
-            "Sin ventas",
-          icon: (
-            <Crown
-              size={36}
-            />
-          ),
-          color:
-            "#8B5CF6",
-          percentage:
-            `$${Number(
-              stats
-                .topCustomer
-                ?.total || 0
-            ).toLocaleString(
-              "es-CO"
-            )}`,
-        },
+  }, [stats]);
 
-        {
-          title:
-            "Producto TOP",
-          value:
-            stats
-              .bestProduct
-              ?.product_name ||
-            "Sin ventas",
-          icon: (
-            <Box
-              size={36}
-            />
-          ),
-          color:
-            "#06B6D4",
-          percentage:
-            `${
-              stats
-                .bestProduct
-                ?.sold || 0
-            } vendidos`,
-        },
-
-      ];
-
-    }, [stats]);
-
-  /* =========================================
-     LOADING
-  ========================================= */
-
-  if (loading) {
+  if (!stats) {
 
     return (
-
       <MainLayout>
 
-        <div
-          className="
-            flex
-            items-center
-            justify-center
-            h-[70vh]
-          "
-        >
-
-          <div
-            className="
-              text-3xl
-              font-black
-              text-[#EAB308]
-            "
-          >
-            Cargando dashboard...
-          </div>
-
+        <div className="text-2xl">
+          Cargando dashboard...
         </div>
 
       </MainLayout>
@@ -261,13 +117,11 @@ function Dashboard() {
   }
 
   return (
-
     <MainLayout>
 
       <div className="space-y-10">
 
         {/* HERO */}
-
         <div>
 
           <h1
@@ -281,22 +135,14 @@ function Dashboard() {
             Bienvenido a CASA MAÍZ 🌽
           </h1>
 
-          <p
-            className="
-              text-gray-400
-              text-xl
-              mt-4
-            "
-          >
-            Sistema administrativo premium
-            para ventas, inventario y
-            gestión empresarial.
+          <p className="text-gray-400 text-xl mt-4">
+            Sistema administrativo premium para ventas,
+            inventario y gestión empresarial.
           </p>
 
         </div>
 
         {/* STATS */}
-
         <div
           className="
             grid
@@ -308,30 +154,16 @@ function Dashboard() {
         >
 
           {cards.map(
-            (
-              card,
-              index
-            ) => (
+            (card, index) => (
 
               <StatsCard
                 key={card.title}
-                title={
-                  card.title
-                }
-                value={
-                  card.value
-                }
-                icon={
-                  card.icon
-                }
-                color={
-                  card.color
-                }
+                title={card.title}
+                value={card.value}
+                icon={card.icon}
+                color={card.color}
                 delay={
-                  0.1 *
-                  (
-                    index + 1
-                  )
+                  0.1 * (index + 1)
                 }
                 percentage={
                   card.percentage
@@ -344,7 +176,6 @@ function Dashboard() {
         </div>
 
         {/* CONTENT */}
-
         <div
           className="
             grid
@@ -355,7 +186,6 @@ function Dashboard() {
         >
 
           {/* CHART */}
-
           <div
             className="
               2xl:col-span-2
@@ -379,33 +209,16 @@ function Dashboard() {
               "
             >
 
-              <div>
-
-                <h2
-                  className="
-                    text-4xl
-                    font-bold
-                  "
-                >
-                  Resumen Financiero
-                </h2>
-
-                <p
-                  className="
-                    text-gray-400
-                    mt-2
-                  "
-                >
-                  Ventas registradas
-                  en tiempo real
-                </p>
-
-              </div>
+              <h2
+                className="
+                  text-4xl
+                  font-bold
+                "
+              >
+                Resumen Financiero
+              </h2>
 
               <button
-                onClick={
-                  loadStats
-                }
                 className="
                   px-5
                   py-3
@@ -413,28 +226,25 @@ function Dashboard() {
                   bg-white/[0.04]
                   border
                   border-white/[0.06]
-                  hover:bg-white/[0.08]
-                  transition
                 "
               >
-                Actualizar
+                Tiempo Real
               </button>
 
             </div>
 
             <SalesChart
               sales={
-                stats.chartData || []
+                stats.recentSales
               }
             />
 
           </div>
 
           {/* RECENT SALES */}
-
           <RecentSales
             sales={
-              stats.recentSales || []
+              stats.recentSales
             }
           />
 

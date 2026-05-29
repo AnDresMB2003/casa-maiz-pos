@@ -5,56 +5,61 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 // LOGIN
-const login = (req, res) => {
+async function login(
+  req,
+  res
+) {
 
-  const {
-    email,
-    password,
-  } = req.body;
+  try {
 
-  // VALIDATION
-  if (
-    !email ||
-    !password
-  ) {
+    const {
+      email,
+      password,
+    } = req.body;
 
-    return res.status(400).json({
-      error:
-        "Todos los campos son obligatorios",
-    });
-  }
+    // VALIDATION
+    if (
+      !email ||
+      !password
+    ) {
 
-  const query = `
-    SELECT *
-    FROM users
-    WHERE email = ?
-  `;
+      return res.status(400).json({
+        error:
+          "Todos los campos son obligatorios",
+      });
+    }
 
-  db.get(
-    query,
-    [email],
-    async (err, user) => {
+    // FIND USER
+    db.get(
 
-      // DB ERROR
-      if (err) {
+      `
+      SELECT *
+      FROM users
+      WHERE email = ?
+      `,
 
-        return res.status(500).json({
-          error: err.message,
-        });
-      }
+      [email],
 
-      // USER NOT FOUND
-      if (!user) {
+      async (err, user) => {
 
-        return res.status(401).json({
-          error:
-            "Credenciales incorrectas",
-        });
-      }
+        // DB ERROR
+        if (err) {
 
-      try {
+          return res.status(500).json({
+            error: err.message,
+          });
+        }
 
-        // COMPARE PASSWORD
+        // USER NOT FOUND
+        if (!user) {
+
+          return res.status(401).json({
+            error:
+              "Credenciales incorrectas",
+          });
+        }
+
+        // CHECK PASSWORD
         const validPassword =
           await bcrypt.compare(
             password,
@@ -85,8 +90,8 @@ const login = (req, res) => {
           }
         );
 
-        // RESPONSE
-        res.json({
+        // SUCCESS
+        return res.json({
 
           token,
 
@@ -103,16 +108,16 @@ const login = (req, res) => {
           },
 
         });
-
-      } catch (error) {
-
-        res.status(500).json({
-          error: error.message,
-        });
       }
-    }
-  );
-};
+    );
+
+  } catch (error) {
+
+    return res.status(500).json({
+      error: error.message,
+    });
+  }
+}
 
 module.exports = {
   login,

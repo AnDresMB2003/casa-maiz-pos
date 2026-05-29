@@ -25,24 +25,14 @@ const usersRoutes =
 const customersRoutes =
   require("./routes/customers/customersRoutes");
 
-const settingsRoutes =
-  require("./routes/settings/settingsRoutes");
-
-const inventoryRoutes =
-  require("./routes/inventory/inventoryRoutes");
-
 const app =
   express();
 
-/* =========================================
-   CORS
-========================================= */
+/* CORS */
 
 app.use(cors());
 
-/* =========================================
-   BODY LIMIT
-========================================= */
+/* FIX PAYLOAD */
 
 app.use(
   express.json({
@@ -57,9 +47,7 @@ app.use(
   })
 );
 
-/* =========================================
-   ROUTES
-========================================= */
+/* ROUTES */
 
 app.use(
   "/api/auth",
@@ -91,20 +79,7 @@ app.use(
   customersRoutes
 );
 
-app.use(
-  "/api/inventory",
-  inventoryRoutes
-);
-
-
-app.use(
-  "/api/settings",
-  settingsRoutes
-);
-
-/* =========================================
-   DATABASE
-========================================= */
+/* DATABASE */
 
 db.serialize(() => {
 
@@ -173,62 +148,8 @@ db.serialize(() => {
       price REAL
     )
   `);
-/* INVENTORY MOVEMENTS */
 
-  db.run(`
-    CREATE TABLE IF NOT EXISTS inventory_movements (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      product_id INTEGER,
-      type TEXT,
-      quantity INTEGER,
-      previous_stock INTEGER,
-      new_stock INTEGER,
-      reference TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  /* SETTINGS */
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS settings (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      business_name TEXT,
-      nit TEXT,
-      phone TEXT,
-      address TEXT,
-      logo TEXT,
-      iva REAL
-    )
-  `);
-
-  /* =========================================
-     INVENTORY MOVEMENTS
-  ========================================= */
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS inventory_movements (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-      product_id INTEGER,
-
-      type TEXT,
-
-      quantity INTEGER,
-
-      previous_stock INTEGER,
-
-      new_stock INTEGER,
-
-      note TEXT,
-
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  /* =========================================
-     SAFE MIGRATIONS
-  ========================================= */
+  /* SAFE MIGRATIONS */
 
   db.run(`
     ALTER TABLE sales
@@ -260,52 +181,10 @@ db.serialize(() => {
     ADD COLUMN email TEXT
   `, () => {});
 
-  /* =========================================
-     INIT SETTINGS
-  ========================================= */
-
-  db.get(
-    `
-      SELECT *
-      FROM settings
-      LIMIT 1
-    `,
-    [],
-    (err, row) => {
-
-      if (!row) {
-
-        db.run(`
-          INSERT INTO settings (
-            business_name,
-            nit,
-            phone,
-            address,
-            logo,
-            iva
-          )
-
-          VALUES (
-            'CASA MAÍZ',
-            '',
-            '',
-            '',
-            '',
-            19
-          )
-        `);
-      }
-    }
-  );
-
   console.log(
     "✅ Database ready"
   );
 });
-
-/* =========================================
-   SERVER
-========================================= */
 
 const PORT =
   4000;
