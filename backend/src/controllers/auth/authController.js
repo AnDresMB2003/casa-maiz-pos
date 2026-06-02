@@ -75,6 +75,17 @@ async function login(
         }
 
         // TOKEN
+        if (
+          user.active === 0 ||
+          user.status === "Retirado" ||
+          user.status === "Inactivo"
+        ) {
+          return res.status(401).json({
+            error:
+              "El usuario no está activo. Consulta con el administrador.",
+          });
+        }
+
         const token = jwt.sign(
 
           {
@@ -83,30 +94,38 @@ async function login(
             role: user.role,
           },
 
-          "casamaiz_secret",
+          process.env.JWT_SECRET || "casamaiz_secret",
 
           {
             expiresIn: "7d",
           }
         );
 
-        // SUCCESS
+        db.run(
+          `
+            UPDATE users
+            SET last_access = datetime('now','localtime')
+            WHERE id = ?
+          `,
+          [user.id]
+        );
+
         return res.json({
-
           token,
-
           user: {
-
             id: user.id,
-
             name: user.name,
-
+            username: user.username,
             email: user.email,
-
             role: user.role,
-
+            document: user.document,
+            phone: user.phone,
+            status: user.status || "Activo",
+            position: user.position || "",
+            created_at: user.created_at,
+            last_access: new Date().toISOString(),
+            active: user.active === 1,
           },
-
         });
       }
     );

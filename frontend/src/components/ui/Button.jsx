@@ -16,11 +16,11 @@ function Button({
     `,
 
     secondary: `
-      bg-white/[0.05]
+      bg-[var(--surface)]
       border
-      border-white/[0.08]
-      text-white
-      hover:bg-white/[0.08]
+      border-[var(--border)]
+      text-[var(--text)]
+      hover:bg-[var(--surface-strong)]
     `,
 
     danger: `

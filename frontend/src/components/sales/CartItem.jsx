@@ -1,8 +1,8 @@
 function CartItem({
   item,
-  increaseQty,
-  decreaseQty,
-  removeItem,
+  onIncrease,
+  onDecrease,
+  removeFromCart,
 }) {
 
   return (
@@ -42,7 +42,7 @@ function CartItem({
 
         <button
           onClick={() =>
-            removeItem(item.id)
+            removeFromCart(item.id)
           }
           className="
             text-red-400
@@ -73,7 +73,7 @@ function CartItem({
 
           <button
             onClick={() =>
-              decreaseQty(item.id)
+              onDecrease(item.id)
             }
             className="
               w-8
@@ -91,14 +91,24 @@ function CartItem({
 
           <button
             onClick={() =>
-              increaseQty(item.id)
+              onIncrease(item.id)
             }
-            className="
+            disabled={
+              Number(item.quantity) >=
+              Number(item.stock)
+            }
+            className={`
               w-8
               h-8
               rounded-full
-              bg-white/10
-            "
+              transition
+              ${
+                Number(item.quantity) >=
+                Number(item.stock)
+                  ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                  : "bg-white/10 hover:bg-white/20"
+              }
+            `}
           >
             +
           </button>

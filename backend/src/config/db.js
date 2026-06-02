@@ -56,7 +56,8 @@ db.run(`
     name TEXT,
     email TEXT UNIQUE,
     password TEXT,
-    role TEXT DEFAULT 'employee'
+    role TEXT DEFAULT 'employee',
+    image TEXT
   )
 `);
 

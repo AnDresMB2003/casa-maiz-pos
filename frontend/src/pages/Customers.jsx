@@ -1,7 +1,10 @@
 import {
   useEffect,
+  useMemo,
   useState,
 } from "react";
+
+import InvoicePreview from "../components/sales/InvoicePreview";
 
 import axios from "axios";
 
@@ -11,6 +14,9 @@ function Customers() {
 
   const [customers, setCustomers] =
     useState([]);
+
+  const [searchTerm, setSearchTerm] =
+    useState("");
 
   const [selected, setSelected] =
     useState(null);
@@ -100,8 +106,36 @@ function Customers() {
       0
     );
 
+  const filteredCustomers =
+    useMemo(() => {
+      const term =
+        searchTerm
+          .trim()
+          .toLowerCase();
+
+      if (!term) {
+        return customers;
+      }
+
+      return customers.filter(
+        (customer) =>
+          customer.name
+            ?.toLowerCase()
+            .includes(term) ||
+          customer.document
+            ?.toLowerCase()
+            .includes(term) ||
+          customer.phone
+            ?.toLowerCase()
+            .includes(term) ||
+          customer.email
+            ?.toLowerCase()
+            .includes(term)
+      );
+    }, [customers, searchTerm]);
+
   const topCustomer =
-    customers[0];
+    filteredCustomers[0];
 
   return (
 
@@ -111,36 +145,60 @@ function Customers() {
 
         <div>
 
-          <h1
-            className="
-              text-5xl
-              font-black
-              text-[#EAB308]
-            "
-          >
-            Clientes
-          </h1>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h1
+                className="
+                  text-5xl
+                  font-black
+                  text-[#EAB308]
+                "
+              >
+                Clientes
+              </h1>
 
-          <p
-            className="
-              text-gray-400
-              mt-3
-            "
-          >
-            Gestión completa
-            de clientes y compras
-          </p>
+              <p
+                className="
+                  text-gray-400
+                  mt-3
+                "
+              >
+                Gestión completa
+                de clientes y compras
+              </p>
+            </div>
+
+            <div className="w-full max-w-md">
+              <label className="sr-only">
+                Buscar cliente
+              </label>
+              <input
+                value={searchTerm}
+                onChange={(e) =>
+                  setSearchTerm(
+                    e.target.value
+                  )
+                }
+                placeholder="Buscar por nombre, correo, celular o documento"
+                className="
+                  w-full
+                  rounded-2xl
+                  border
+                  border-white/10
+                  bg-white/[0.03]
+                  px-4
+                  py-3
+                  text-white
+                  outline-none
+                  placeholder:text-gray-500
+                "
+              />
+            </div>
+          </div>
 
         </div>
 
-        <div
-          className="
-            grid
-            grid-cols-1
-            md:grid-cols-3
-            gap-6
-          "
-        >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
           <div
             className="
@@ -236,7 +294,7 @@ function Customers() {
           "
         >
 
-          {customers.map(
+          {filteredCustomers.map(
             (customer) => (
 
               <div
@@ -555,12 +613,12 @@ function Customers() {
 
             <div
               className="
-                bg-white
+                bg-[#F3F4F6]
                 text-black
                 rounded-[32px]
                 p-8
                 w-full
-                max-w-2xl
+                max-w-4xl
                 max-h-[90vh]
                 overflow-y-auto
               "
@@ -575,26 +633,14 @@ function Customers() {
                 "
               >
 
-                <div>
-
-                  <h2
-                    className="
-                      text-4xl
-                      font-black
-                    "
-                  >
-                    {
-                      invoice.invoice_number
-                    }
-                  </h2>
-
-                  <p className="mt-2 text-gray-500">
-                    {
-                      invoice.created_at
-                    }
-                  </p>
-
-                </div>
+                <h2
+                  className="
+                    text-3xl
+                    font-black
+                  "
+                >
+                  Factura completa
+                </h2>
 
                 <button
                   onClick={() =>
@@ -609,182 +655,13 @@ function Customers() {
 
               </div>
 
-              <div className="mb-8">
-
-                <h3
-                  className="
-                    font-black
-                    text-2xl
-                    mb-4
-                  "
-                >
-                  Cliente
-                </h3>
-
-                <div
-                  className="
-                    rounded-2xl
-                    border
-                    p-5
-                  "
-                >
-
-                  <p>
-                    <strong>
-                      Nombre:
-                    </strong>
-                    {" "}
-                    {
-                      invoice.customer_name
-                    }
-                  </p>
-
-                  <p className="mt-2">
-                    <strong>
-                      Documento:
-                    </strong>
-                    {" "}
-                    {
-                      invoice.customer_document
-                    }
-                  </p>
-
-                  <p className="mt-2">
-                    <strong>
-                      Teléfono:
-                    </strong>
-                    {" "}
-                    {
-                      invoice.customer_phone
-                    }
-                  </p>
-
-                  <p className="mt-2">
-                    <strong>
-                      Correo:
-                    </strong>
-                    {" "}
-                    {
-                      invoice.customer_email
-                    }
-                  </p>
-
-                </div>
-
-              </div>
-
-              <div>
-
-                <h3
-                  className="
-                    font-black
-                    text-2xl
-                    mb-4
-                  "
-                >
-                  Productos
-                </h3>
-
-                <div className="space-y-4">
-
-                  {invoice.items?.map(
-                    (item) => (
-
-                      <div
-                        key={item.id}
-                        className="
-                          rounded-2xl
-                          border
-                          p-5
-                          flex
-                          justify-between
-                          items-center
-                        "
-                      >
-
-                        <div>
-
-                          <h4 className="font-bold">
-                            {
-                              item.product_name
-                            }
-                          </h4>
-
-                          <p className="text-gray-500 mt-1">
-                            Cantidad:
-                            {" "}
-                            {
-                              item.quantity
-                            }
-                          </p>
-
-                        </div>
-
-                        <h3
-                          className="
-                            text-2xl
-                            font-black
-                          "
-                        >
-                          $
-                          {Number(
-                            item.price *
-                            item.quantity
-                          ).toLocaleString(
-                            "es-CO"
-                          )}
-                        </h3>
-
-                      </div>
-
-                    )
-                  )}
-
-                </div>
-
-              </div>
-
-              <div
-                className="
-                  mt-8
-                  pt-6
-                  border-t
-                  flex
-                  justify-between
-                  items-center
-                "
-              >
-
-                <h3
-                  className="
-                    text-3xl
-                    font-black
-                  "
-                >
-                  TOTAL
-                </h3>
-
-                <h3
-                  className="
-                    text-4xl
-                    font-black
-                    text-[#EAB308]
-                  "
-                >
-                  $
-                  {Number(
-                    invoice.total
-                  ).toLocaleString(
-                    "es-CO"
-                  )}
-                </h3>
-
-              </div>
+              <InvoicePreview
+                sale={invoice}
+              />
 
             </div>
 
           </div>
-
         )}
 
       </div>

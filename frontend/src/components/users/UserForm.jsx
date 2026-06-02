@@ -2,7 +2,7 @@ import {
   useState,
 } from "react";
 
-import axios from "axios";
+import api from "../../services/api";
 
 import toast from "react-hot-toast";
 
@@ -15,13 +15,26 @@ function UserForm({
 
       name: "",
 
+      username: "",
+
       email: "",
 
       password: "",
 
-      role: "employee",
+      phone: "",
+
+      document: "",
+
+      role: "admin",
+
+      status: "Activo",
+
+      image: "",
 
     });
+
+  const [preview, setPreview] =
+    useState("");
 
   const [loading, setLoading] =
     useState(false);
@@ -39,33 +52,29 @@ function UserForm({
     });
   }
 
+  function handleImage(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setForm((prev) => ({
+        ...prev,
+        image: reader.result,
+      }));
+      setPreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+  }
+
   // SUBMIT
   async function handleSubmit(e) {
 
     e.preventDefault();
 
     try {
-
       setLoading(true);
-
-      const token =
-        localStorage.getItem(
-          "token"
-        );
-
-      await axios.post(
-
-        "http://localhost:4000/api/users",
-
-        form,
-
-        {
-          headers: {
-            Authorization:
-              `Bearer ${token}`,
-          },
-        }
-      );
+      await api.post("/users", form);
 
       toast.success(
         "Usuario creado correctamente"
@@ -75,14 +84,25 @@ function UserForm({
 
         name: "",
 
+        username: "",
+
         email: "",
 
         password: "",
 
-        role: "employee",
+        phone: "",
+
+        document: "",
+
+        role: "admin",
+
+        status: "Activo",
+
+        image: "",
 
       });
 
+      setPreview("");
       loadUsers();
 
     } catch (error) {
@@ -118,15 +138,36 @@ function UserForm({
         value={form.name}
         onChange={handleChange}
         className="
-          bg-[#1A1A1A]
+          bg-[var(--surface)]
           border
-          border-white/10
+          border-[var(--border)]
           rounded-2xl
           px-5
           py-4
           outline-none
+          text-[var(--text)]
+          placeholder:text-[var(--muted)]
         "
         required
+      />
+
+      <input
+        type="text"
+        name="username"
+        placeholder="Usuario"
+        value={form.username}
+        onChange={handleChange}
+        className="
+          bg-[var(--surface)]
+          border
+          border-[var(--border)]
+          rounded-2xl
+          px-5
+          py-4
+          outline-none
+          text-[var(--text)]
+          placeholder:text-[var(--muted)]
+        "
       />
 
       {/* EMAIL */}
@@ -137,15 +178,36 @@ function UserForm({
         value={form.email}
         onChange={handleChange}
         className="
-          bg-[#1A1A1A]
+          bg-[var(--surface)]
           border
-          border-white/10
+          border-[var(--border)]
           rounded-2xl
           px-5
           py-4
           outline-none
+          text-[var(--text)]
+          placeholder:text-[var(--muted)]
         "
         required
+      />
+
+      <input
+        type="text"
+        name="document"
+        placeholder="Documento"
+        value={form.document}
+        onChange={handleChange}
+        className="
+          bg-[var(--surface)]
+          border
+          border-[var(--border)]
+          rounded-2xl
+          px-5
+          py-4
+          outline-none
+          text-[var(--text)]
+          placeholder:text-[var(--muted)]
+        "
       />
 
       {/* PASSWORD */}
@@ -156,15 +218,36 @@ function UserForm({
         value={form.password}
         onChange={handleChange}
         className="
-          bg-[#1A1A1A]
+          bg-[var(--surface)]
           border
-          border-white/10
+          border-[var(--border)]
           rounded-2xl
           px-5
           py-4
           outline-none
+          text-[var(--text)]
+          placeholder:text-[var(--muted)]
         "
         required
+      />
+
+      <input
+        type="text"
+        name="phone"
+        placeholder="Teléfono"
+        value={form.phone}
+        onChange={handleChange}
+        className="
+          bg-[var(--surface)]
+          border
+          border-[var(--border)]
+          rounded-2xl
+          px-5
+          py-4
+          outline-none
+          text-[var(--text)]
+          placeholder:text-[var(--muted)]
+        "
       />
 
       {/* ROLE */}
@@ -173,29 +256,59 @@ function UserForm({
         value={form.role}
         onChange={handleChange}
         className="
-          bg-[#1A1A1A]
+          bg-[var(--surface)]
           border
-          border-white/10
+          border-[var(--border)]
           rounded-2xl
           px-5
           py-4
           outline-none
+          text-[var(--text)]
+          placeholder:text-[var(--muted)]
         "
       >
-
-        <option value="admin">
-          Admin
-        </option>
-
-        <option value="employee">
-          Employee
-        </option>
-
-        <option value="cashier">
-          Cashier
-        </option>
-
+        <option value="admin">Admin</option>
+        <option value="vendedor">Vendedor</option>
+        <option value="cashier">Cajero</option>
       </select>
+
+      <select
+        name="status"
+        value={form.status}
+        onChange={handleChange}
+        className="
+          bg-[var(--surface)]
+          border
+          border-[var(--border)]
+          rounded-2xl
+          px-5
+          py-4
+          outline-none
+          text-[var(--text)]
+          placeholder:text-[var(--muted)]
+        "
+      >
+        <option value="Activo">Activo</option>
+        <option value="Inactivo">Inactivo</option>
+        <option value="Retirado">Retirado</option>
+      </select>
+
+      <label className="flex flex-col gap-3 rounded-2xl border border-white/10 p-4">
+        <span className="text-sm text-gray-400">Foto de perfil</span>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleImage}
+          className="text-sm text-white"
+        />
+        {preview && (
+          <img
+            src={preview}
+            alt="Preview"
+            className="w-full max-w-xs rounded-3xl object-cover"
+          />
+        )}
+      </label>
 
       {/* BUTTON */}
       <button

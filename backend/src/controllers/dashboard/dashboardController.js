@@ -85,32 +85,62 @@ const getDashboardStats = (req, res) => {
                   stats.lowStock =
                     lowStockResult.lowStock;
 
-                  // RECENT SALES
+                  // SALES BY DAY
                   db.all(
                     `
-                      SELECT *
+                      SELECT
+                        date(created_at) AS day,
+                        SUM(total) AS total
                       FROM sales
-                      ORDER BY id DESC
-                      LIMIT 5
+                      WHERE created_at >= datetime('now','localtime','-6 days')
+                      GROUP BY day
+                      ORDER BY day ASC
                     `,
                     [],
                     (
                       err,
-                      recentSales
+                      dailySales
                     ) => {
 
                       if (err) {
-
                         return res.status(500).json({
-                          error:
-                            err.message,
+                          error: err.message,
                         });
                       }
 
-                      stats.recentSales =
-                        recentSales;
+                      stats.salesByDay =
+                        dailySales.map((row) => ({
+                          day: row.day,
+                          total: row.total,
+                        }));
 
-                      res.json(stats);
+                      // RECENT SALES
+                      db.all(
+                        `
+                          SELECT *
+                          FROM sales
+                          ORDER BY id DESC
+                          LIMIT 5
+                        `,
+                        [],
+                        (
+                          err,
+                          recentSales
+                        ) => {
+
+                          if (err) {
+                            return res.status(500).json({
+                              error:
+                                err.message,
+                            });
+                          }
+
+                          stats.recentSales =
+                            recentSales;
+
+                          res.json(stats);
+                        }
+                      );
                     }
                   );
                 }

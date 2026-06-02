@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useState,
 } from "react";
 
@@ -30,6 +31,9 @@ function Inventory({
 
   const [products, setProducts] =
     useState([]);
+
+  const [searchTerm, setSearchTerm] =
+    useState("");
 
   const [editing, setEditing] =
     useState(null);
@@ -139,6 +143,28 @@ function Inventory({
         Number(p.stock) <= 5
     ).length;
 
+  const filteredProducts =
+    useMemo(() => {
+      const term =
+        searchTerm
+          .trim()
+          .toLowerCase();
+
+      if (!term) {
+        return products;
+      }
+
+      return products.filter(
+        (product) =>
+          product.name
+            ?.toLowerCase()
+            .includes(term) ||
+          product.category
+            ?.toLowerCase()
+            .includes(term)
+      );
+    }, [products, searchTerm]);
+
   const totalValue =
     products.reduce(
       (
@@ -212,6 +238,33 @@ function Inventory({
               Gestión y control de productos
             </p>
 
+          </div>
+
+          <div className="max-w-md w-full">
+            <label className="sr-only">
+              Buscar inventario
+            </label>
+            <input
+              value={searchTerm}
+              onChange={(e) =>
+                setSearchTerm(
+                  e.target.value
+                )
+              }
+              placeholder="Buscar por nombre o categoría"
+              className="
+                w-full
+                rounded-2xl
+                border
+                border-gray-200
+                bg-gray-50
+                px-4
+                py-3
+                text-sm
+                text-gray-900
+                outline-none
+              "
+            />
           </div>
 
           <div
@@ -540,25 +593,37 @@ function Inventory({
               "
             >
 
-              {products.map(
-                (
-                  product
-                ) => (
-
-                  <div
-                    key={
-                      product.id
-                    }
-                    className="
-                      bg-white
-                      rounded-3xl
-                      border
-                      overflow-hidden
-                      shadow-sm
-                      transition
-                      hover:-translate-y-1
-                    "
-                  >
+              {filteredProducts.length === 0 ? (
+                <div
+                  className="
+                    col-span-full
+                    rounded-3xl
+                    border
+                    border-white/10
+                    bg-white
+                    p-8
+                    text-center
+                  "
+                >
+                  <p className="text-gray-500">
+                    No se encontraron productos.
+                  </p>
+                </div>
+              ) : (
+                filteredProducts.map((product) => {
+                  return (
+                    <div
+                      key={product.id}
+                      className="
+                        bg-white
+                        rounded-3xl
+                        border
+                        overflow-hidden
+                        shadow-sm
+                        transition
+                        hover:-translate-y-1
+                      "
+                    >
 
                     {product.image ? (
 
@@ -755,8 +820,8 @@ function Inventory({
                     </div>
 
                   </div>
-
-                )
+                  );
+                })
               )}
 
             </div>

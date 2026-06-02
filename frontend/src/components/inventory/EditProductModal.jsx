@@ -214,7 +214,7 @@ function EditProductModal({
               w-11
               h-11
               rounded-2xl
-              bg-gray-100
+              bg-red-800
             "
           >
             ✕
@@ -245,6 +245,8 @@ function EditProductModal({
               border
               rounded-2xl
               p-4
+              text-gray-900
+              placeholder-gray-500
             "
           />
 
@@ -262,6 +264,8 @@ function EditProductModal({
               border
               rounded-2xl
               p-4
+              text-gray-900
+              placeholder-gray-500
             "
           />
 
@@ -279,6 +283,8 @@ function EditProductModal({
               border
               rounded-2xl
               p-4
+              text-gray-900
+              placeholder-gray-500
             "
           />
 
@@ -298,6 +304,8 @@ function EditProductModal({
               border
               rounded-2xl
               p-4
+              text-gray-900
+              placeholder-gray-500
             "
           />
 
@@ -374,7 +382,7 @@ function EditProductModal({
               px-5
               py-3
               rounded-2xl
-              bg-gray-100
+              bg-red-800
             "
           >
             Cancelar

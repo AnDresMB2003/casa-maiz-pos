@@ -57,6 +57,108 @@ router.get("/", (req, res) => {
   );
 });
 
+/* GET CUSTOMER BY DOCUMENT */
+
+router.get(
+  "/search/document/:document",
+  (req, res) => {
+
+    const document =
+      req.params.document;
+
+    const query = `
+      SELECT *
+
+      FROM customers
+
+      WHERE document = ?
+    `;
+
+    db.get(
+      query,
+      [document],
+
+      (err, customer) => {
+
+        if (err) {
+
+          console.log(err);
+
+          return res
+            .status(500)
+            .json({
+              error:
+                "Error buscando cliente",
+            });
+        }
+
+        if (!customer) {
+
+          return res
+            .status(404)
+            .json({
+              error:
+                "Cliente no encontrado",
+            });
+        }
+
+        res.json(customer);
+      }
+    );
+  }
+);
+
+/* GET CUSTOMER BY EMAIL */
+
+router.get(
+  "/search/email/:email",
+  (req, res) => {
+
+    const email =
+      req.params.email;
+
+    const query = `
+      SELECT *
+
+      FROM customers
+
+      WHERE email = ?
+    `;
+
+    db.get(
+      query,
+      [email],
+
+      (err, customer) => {
+
+        if (err) {
+
+          console.log(err);
+
+          return res
+            .status(500)
+            .json({
+              error:
+                "Error buscando cliente",
+            });
+        }
+
+        if (!customer) {
+
+          return res
+            .status(404)
+            .json({
+              error:
+                "Cliente no encontrado",
+            });
+        }
+
+        res.json(customer);
+      }
+    );
+  }
+);
+
 /* GET CUSTOMER DETAILS */
 
 router.get(

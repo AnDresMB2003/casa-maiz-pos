@@ -1,11 +1,25 @@
 const express =
   require("express");
 
+const path =
+  require("path");
+
 const router =
   express.Router();
 
 const db =
   require("../../config/db");
+
+const authMiddleware =
+  require("../../middleware/authMiddleware");
+
+const roleMiddleware =
+  require("../../middleware/roleMiddleware");
+
+const dbPath = path.resolve(
+  __dirname,
+  "../../database/casamaiz.db"
+);
 
 /* =========================================
    GET SETTINGS
@@ -18,9 +32,7 @@ router.get(
     db.get(
       `
         SELECT *
-
-        FROM settings
-
+        FROM business_settings
         LIMIT 1
       `,
       [],
@@ -58,6 +70,15 @@ router.get(
 
             logo:
               "",
+
+            currency:
+              "COP",
+
+            theme:
+              "dark",
+
+            invoice_prefix:
+              "FAC",
           });
         }
 
@@ -82,14 +103,15 @@ router.post(
       address,
       iva,
       logo,
+      currency,
+      theme,
+      invoice_prefix,
     } = req.body;
 
     db.get(
       `
         SELECT id
-
-        FROM settings
-
+        FROM business_settings
         LIMIT 1
       `,
       [],
@@ -116,16 +138,17 @@ router.post(
 
           db.run(
             `
-              UPDATE settings
-
+              UPDATE business_settings
               SET
                 business_name = ?,
                 nit = ?,
                 phone = ?,
                 address = ?,
                 iva = ?,
-                logo = ?
-
+                logo = ?,
+                currency = ?,
+                theme = ?,
+                invoice_prefix = ?
               WHERE id = ?
             `,
             [
@@ -135,20 +158,16 @@ router.post(
               address,
               iva,
               logo,
+              currency,
+              theme,
+              invoice_prefix,
               existing.id,
             ],
+            (updateErr) => {
 
-            function (
-              updateError
-            ) {
+              if (updateErr) {
 
-              if (
-                updateError
-              ) {
-
-                console.log(
-                  updateError
-                );
+                console.log(updateErr);
 
                 return res
                   .status(500)
@@ -158,9 +177,10 @@ router.post(
                   });
               }
 
-              res.json({
-                success:
-                  true,
+              return res.json({
+                success: true,
+                message:
+                  "Configuración actualizada correctamente",
               });
             }
           );
@@ -171,49 +191,48 @@ router.post(
 
           db.run(
             `
-              INSERT INTO settings (
+              INSERT INTO business_settings (
                 business_name,
                 nit,
                 phone,
                 address,
+                logo,
                 iva,
-                logo
+                currency,
+                theme,
+                invoice_prefix
               )
-
-              VALUES (?, ?, ?, ?, ?, ?)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             `,
             [
               business_name,
               nit,
               phone,
               address,
-              iva,
               logo,
+              iva,
+              currency,
+              theme,
+              invoice_prefix,
             ],
+            (insertErr) => {
 
-            function (
-              insertError
-            ) {
+              if (insertErr) {
 
-              if (
-                insertError
-              ) {
-
-                console.log(
-                  insertError
-                );
+                console.log(insertErr);
 
                 return res
                   .status(500)
                   .json({
                     error:
-                      "Error guardando configuración",
+                      "Error creando configuración",
                   });
               }
 
-              res.json({
-                success:
-                  true,
+              return res.json({
+                success: true,
+                message:
+                  "Configuración guardada correctamente",
               });
             }
           );

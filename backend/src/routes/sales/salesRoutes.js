@@ -200,21 +200,20 @@ router.post(
         });
     }
 
-    const customerName =
-      customer?.name ||
-      "Consumidor final";
-
     const customerDocument =
-      customer?.document ||
+      customer?.document?.trim() ||
       "222222222";
 
     const customerPhone =
-      customer?.phone ||
+      customer?.phone?.trim() ||
       "";
 
     const customerEmail =
-      customer?.email ||
+      customer?.email?.trim() ||
       "";
+
+    const customerName =
+      customer?.name?.trim();
 
     const invoiceNumber =
       `FAC-${Date.now()}`;
@@ -420,6 +419,21 @@ router.post(
           existingCustomer
         ) {
 
+          const finalName =
+            customerName ||
+            existingCustomer.name ||
+            "Consumidor final";
+
+          const finalPhone =
+            customerPhone ||
+            existingCustomer.phone ||
+            "";
+
+          const finalEmail =
+            customerEmail ||
+            existingCustomer.email ||
+            "";
+
           db.run(
             `
               UPDATE customers
@@ -432,9 +446,9 @@ router.post(
               WHERE id = ?
             `,
             [
-              customerName,
-              customerPhone,
-              customerEmail,
+              finalName,
+              finalPhone,
+              finalEmail,
               existingCustomer.id,
             ],
 
@@ -475,7 +489,7 @@ router.post(
             VALUES (?, ?, ?, ?)
           `,
             [
-              customerName,
+              customerName || "Consumidor final",
               customerDocument,
               customerPhone,
               customerEmail,

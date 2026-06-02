@@ -7,10 +7,15 @@ import axios from "axios";
 
 import MainLayout from "../layouts/MainLayout";
 
+import InvoicePreview from "../components/sales/InvoicePreview";
+
 function Reports() {
 
   const [sales, setSales] =
     useState([]);
+
+  const [searchTerm, setSearchTerm] =
+    useState("");
 
   const [selected, setSelected] =
     useState(null);
@@ -70,6 +75,21 @@ function Reports() {
 
       0
     );
+
+  const term = searchTerm.trim().toLowerCase();
+
+  const filteredSales =
+    !term
+      ? sales
+      : sales.filter(
+          (sale) =>
+            sale.invoice_number
+              ?.toLowerCase()
+              .includes(term) ||
+            sale.id
+              .toString()
+              .includes(term)
+        );
 
   return (
 
@@ -179,8 +199,11 @@ function Reports() {
           <div
             className="
               flex
-              items-center
-              justify-between
+              flex-col
+              gap-4
+              xl:flex-row
+              xl:items-end
+              xl:justify-between
               mb-8
             "
           >
@@ -202,29 +225,70 @@ function Reports() {
 
             </div>
 
+            <div className="w-full max-w-md">
+              <label className="sr-only">
+                Buscar factura
+              </label>
+              <input
+                value={searchTerm}
+                onChange={(e) =>
+                  setSearchTerm(
+                    e.target.value
+                  )
+                }
+                placeholder="Buscar por ID o número de factura"
+                className="
+                  w-full
+                  rounded-2xl
+                  border
+                  border-white/10
+                  bg-black/5
+                  px-4
+                  py-3
+                  text-black
+                  outline-none
+                "
+              />
+            </div>
+
           </div>
 
           <div className="space-y-5">
 
-            {sales.map(
-              (sale) => (
-
-                <div
-                  key={sale.id}
-                  className="
-                    rounded-3xl
-                    border
-                    border-white/[0.06]
-                    bg-black/20
-                    p-6
-                    flex
-                    flex-col
-                    lg:flex-row
-                    lg:items-center
-                    lg:justify-between
-                    gap-6
-                  "
-                >
+            {filteredSales.length === 0 ? (
+              <div
+                className="
+                  rounded-3xl
+                  border
+                  border-white/[0.06]
+                  bg-black/10
+                  p-8
+                  text-center
+                "
+              >
+                <p className="text-gray-400">
+                  No se encontraron facturas.
+                </p>
+              </div>
+            ) : (
+              filteredSales.map((sale) => {
+                return (
+                  <div
+                    key={sale.id}
+                    className="
+                      rounded-3xl
+                      border
+                      border-white/[0.06]
+                      bg-black/20
+                      p-6
+                      flex
+                      flex-col
+                      lg:flex-row
+                      lg:items-center
+                      lg:justify-between
+                      gap-6
+                    "
+                  >
 
                   <div>
 
@@ -310,9 +374,9 @@ function Reports() {
                   </div>
 
                 </div>
-
-              )
-            )}
+                  );
+                })
+              )}
 
           </div>
 
@@ -324,7 +388,7 @@ function Reports() {
             className="
               fixed
               inset-0
-              bg-black/70
+              bg-black/80
               backdrop-blur-sm
               z-50
               flex
@@ -337,9 +401,9 @@ function Reports() {
             <div
               className="
                 w-full
-                max-w-2xl
+                max-w-4xl
                 rounded-[32px]
-                bg-white
+                bg-[#F3F4F6]
                 text-black
                 p-8
                 overflow-y-auto
@@ -351,28 +415,19 @@ function Reports() {
                 className="
                   flex
                   justify-between
-                  items-start
+                  items-center
+                  mb-6
                 "
               >
 
-                <div>
-
-                  <h2
-                    className="
-                      text-4xl
-                      font-black
-                    "
-                  >
-                    FACTURA
-                  </h2>
-
-                  <p className="mt-2">
-                    {
-                      selected.invoice_number
-                    }
-                  </p>
-
-                </div>
+                <h2
+                  className="
+                    text-3xl
+                    font-black
+                  "
+                >
+                  Vista de factura
+                </h2>
 
                 <button
                   onClick={() =>
@@ -380,6 +435,7 @@ function Reports() {
                   }
                   className="
                     text-2xl
+                    text-black
                   "
                 >
                   ✕
@@ -387,179 +443,13 @@ function Reports() {
 
               </div>
 
-              <div className="mt-8 space-y-2">
-
-                <p>
-                  Cliente:
-                  {" "}
-                  {
-                    selected.customer_name
-                  }
-                </p>
-
-                <p>
-                  Documento:
-                  {" "}
-                  {
-                    selected.customer_document
-                  }
-                </p>
-
-                <p>
-                  Teléfono:
-                  {" "}
-                  {
-                    selected.customer_phone
-                  }
-                </p>
-
-              </div>
-
-              <div className="mt-10">
-
-                <h3
-                  className="
-                    text-2xl
-                    font-black
-                    mb-5
-                  "
-                >
-                  Productos
-                </h3>
-
-                <div className="space-y-4">
-
-                  {selected.items?.map(
-                    (item) => (
-
-                      <div
-                        key={item.id}
-                        className="
-                          border
-                          rounded-2xl
-                          p-4
-                          flex
-                          justify-between
-                        "
-                      >
-
-                        <div>
-
-                          <h4
-                            className="
-                              font-bold
-                            "
-                          >
-                            {
-                              item.product_name
-                            }
-                          </h4>
-
-                          <p>
-                            Cantidad:
-                            {" "}
-                            {
-                              item.quantity
-                            }
-                          </p>
-
-                        </div>
-
-                        <h4
-                          className="
-                            font-black
-                          "
-                        >
-                          $
-                          {Number(
-                            item.price *
-                            item.quantity
-                          ).toLocaleString(
-                            "es-CO"
-                          )}
-                        </h4>
-
-                      </div>
-
-                    )
-                  )}
-
-                </div>
-
-              </div>
-
-              <div className="mt-10 space-y-3">
-
-                <div
-                  className="
-                    flex
-                    justify-between
-                  "
-                >
-
-                  <p>Subtotal</p>
-
-                  <p>
-                    $
-                    {Number(
-                      selected.subtotal
-                    ).toLocaleString(
-                      "es-CO"
-                    )}
-                  </p>
-
-                </div>
-
-                <div
-                  className="
-                    flex
-                    justify-between
-                  "
-                >
-
-                  <p>IVA</p>
-
-                  <p>
-                    $
-                    {Number(
-                      selected.iva
-                    ).toLocaleString(
-                      "es-CO"
-                    )}
-                  </p>
-
-                </div>
-
-                <div
-                  className="
-                    flex
-                    justify-between
-                    text-3xl
-                    font-black
-                    pt-4
-                    border-t
-                  "
-                >
-
-                  <p>Total</p>
-
-                  <p>
-                    $
-                    {Number(
-                      selected.total
-                    ).toLocaleString(
-                      "es-CO"
-                    )}
-                  </p>
-
-                </div>
-
-              </div>
+              <InvoicePreview
+                sale={selected}
+              />
 
             </div>
 
           </div>
-
         )}
 
       </div>

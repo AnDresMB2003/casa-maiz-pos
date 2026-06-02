@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 function ProductCard({
   product,
   addToCart,
+  disabled,
 }) {
 
   function handleAdd() {
@@ -170,7 +171,7 @@ function ProductCard({
 
           <button
             onClick={handleAdd}
-            disabled={outOfStock}
+            disabled={outOfStock || disabled}
             className={`
               px-5
               py-3
@@ -179,7 +180,7 @@ function ProductCard({
               transition-all
 
               ${
-                outOfStock
+                outOfStock || disabled
                   ? `
                     bg-gray-700
                     text-gray-400
@@ -193,7 +194,11 @@ function ProductCard({
               }
             `}
           >
-            Agregar
+            {outOfStock
+              ? "Agotado"
+              : disabled
+              ? "Stock máximo"
+              : "Agregar"}
           </button>
 
         </div>

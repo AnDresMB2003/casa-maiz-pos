@@ -20,44 +20,61 @@ const links = [
     name: "Dashboard",
     path: "/",
     icon: LayoutDashboard,
+    roles: ["admin", "vendedor", "cashier"],
   },
 
   {
     name: "Inventario",
     path: "/inventory",
     icon: Package,
+    roles: ["admin"],
   },
 
   {
     name: "Ventas",
     path: "/sales",
     icon: ShoppingCart,
+    roles: ["admin", "vendedor", "cashier"],
   },
 
   {
     name: "Clientes",
     path: "/customers",
     icon: Users,
+    roles: ["admin", "vendedor"],
   },
 
   {
     name: "Reportes",
     path: "/reports",
     icon: BarChart3,
+    roles: ["admin", "vendedor"],
+  },
+
+  {
+    name: "Usuarios",
+    path: "/users",
+    icon: Users,
+    roles: ["admin"],
   },
 
   {
     name: "Configuración",
     path: "/settings",
     icon: Settings,
+    roles: ["admin"],
   },
 
 ];
 
 function Sidebar() {
 
-  const { logout } =
+  const { user, logout } =
     useAuth();
+
+  const availableLinks = links.filter((link) =>
+    link.roles.includes(user?.role || "admin")
+  );
 
   return (
     <aside
@@ -68,8 +85,8 @@ function Sidebar() {
         justify-between
         w-[260px]
         border-r
-        border-white/[0.05]
-        bg-[#111113]
+        border-[var(--border)]
+        bg-[var(--surface-strong)]
         px-5
         py-6
       "
@@ -106,7 +123,7 @@ function Sidebar() {
         {/* NAV */}
         <nav className="mt-10 space-y-2">
 
-          {links.map((link) => {
+          {availableLinks.map((link) => {
 
             const Icon =
               link.icon;
@@ -135,7 +152,7 @@ function Sidebar() {
                         text-black
                       `
                       : `
-                        text-gray-400
+                        text-[var(--text)]
                         hover:bg-white/[0.04]
                         hover:text-white
                       `
@@ -167,13 +184,13 @@ function Sidebar() {
           rounded-2xl
           border
           border-red-500/10
-          bg-red-500/5
+          bg-red-500/10
           py-3
           text-sm
           font-semibold
           text-red-400
           transition-all
-          hover:bg-red-500/10
+          hover:bg-red-500/20
         "
       >
 

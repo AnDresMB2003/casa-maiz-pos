@@ -13,13 +13,42 @@ body,
 #root {
   width: 100%;
   min-height: 100%;
-  background: #050505;
-  color: white;
+  background: var(--bg);
+  color: var(--text);
   font-family: sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+  --bg: #050505;
+  --surface: #0b0b11;
+  --surface-strong: #111113;
+  --text: #f8fafc;
+  --muted: #94a3b8;
+  --border: rgba(255, 255, 255, 0.08);
+  --card-bg: rgba(15, 23, 42, 0.85);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-strong: #e2e8f0;
+  --text: #0f172a;
+  --muted: #475569;
+  --border: rgba(15, 23, 42, 0.12);
+  --card-bg: rgba(255, 255, 255, 0.82);
 }
 
 body {
   overflow-x: hidden;
+}
+
+button,
+input,
+select,
+textarea {
+  color: var(--text);
 }
 
 button {
@@ -27,6 +56,14 @@ button {
   border: none;
 }
 
-input {
-  color: white;
+input,
+select,
+textarea {
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
 }

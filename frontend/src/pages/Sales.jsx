@@ -27,6 +27,9 @@ function Sales() {
   const [draftSale, setDraftSale] =
     useState(null);
 
+  const [searchTerm, setSearchTerm] =
+    useState("");
+
   useEffect(() => {
 
     loadProducts();
@@ -65,6 +68,16 @@ function Sales() {
       );
 
     if (exists) {
+      if (
+        Number(exists.quantity) >=
+        Number(product.stock)
+      ) {
+        toast.error(
+          "No hay suficiente stock"
+        );
+
+        return;
+      }
 
       setCart(
         cart.map((item) =>
@@ -79,6 +92,13 @@ function Sales() {
         )
       );
 
+      return;
+    }
+
+    if (Number(product.stock) <= 0) {
+      toast.error(
+        "Producto agotado"
+      );
       return;
     }
 
@@ -159,6 +179,41 @@ function Sales() {
   const total =
     subtotal + iva;
 
+  const filteredProducts =
+    useMemo(() => {
+      const term =
+        searchTerm
+          .trim()
+          .toLowerCase();
+
+      if (!term) {
+        return products;
+      }
+
+      return products.filter(
+        (product) => {
+          const name =
+            product.name
+              ?.toLowerCase()
+              .includes(term);
+          const category =
+            product.category
+              ?.toLowerCase()
+              .includes(term);
+          const priceMatch =
+            product.price
+              .toString()
+              .includes(term);
+
+          return (
+            name ||
+            category ||
+            priceMatch
+          );
+        }
+      );
+    }, [products, searchTerm]);
+
   function completeSale() {
 
     if (cart.length === 0) {
@@ -196,8 +251,11 @@ function Sales() {
           <div
             className="
               flex
-              items-center
-              justify-between
+              flex-col
+              gap-4
+              md:flex-row
+              md:items-center
+              md:justify-between
               mb-8
             "
           >
@@ -228,6 +286,33 @@ function Sales() {
 
           </div>
 
+          <div className="mb-6 max-w-xl">
+            <label className="sr-only">
+              Buscar producto
+            </label>
+            <input
+              value={searchTerm}
+              onChange={(e) =>
+                setSearchTerm(
+                  e.target.value
+                )
+              }
+              placeholder="Buscar por nombre, categoría o precio"
+              className="
+                w-full
+                rounded-3xl
+                border
+                border-white/10
+                bg-[#111113]
+                px-4
+                py-3
+                text-white
+                outline-none
+                placeholder:text-gray-500
+              "
+            />
+          </div>
+
           <div
             className="
               grid
@@ -238,15 +323,43 @@ function Sales() {
             "
           >
 
-            {products.map((product) => (
+            {filteredProducts.length === 0 ? (
+              <div
+                className="
+                  col-span-full
+                  rounded-[32px]
+                  border
+                  border-white/10
+                  bg-white/[0.03]
+                  p-8
+                  text-center
+                "
+              >
+                <p className="text-gray-400">
+                  No se encontraron productos.
+                </p>
+              </div>
+            ) : (
+              filteredProducts.map((product) => {
+                const cartItem = cart.find(
+                  (item) => item.id === product.id
+                );
 
-              <ProductCard
-                key={product.id}
-                product={product}
-                addToCart={addToCart}
-              />
+                const maxQuantity =
+                  cartItem &&
+                  Number(cartItem.quantity) >=
+                    Number(product.stock);
 
-            ))}
+                return (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    addToCart={addToCart}
+                    disabled={maxQuantity}
+                  />
+                );
+              })
+            )}
 
           </div>
 
@@ -425,6 +538,7 @@ function Sales() {
       </div>
 
       <InvoiceModal
+        key={draftSale ? "open" : "closed"}
         sale={draftSale}
         onClose={() =>
           setDraftSale(null)

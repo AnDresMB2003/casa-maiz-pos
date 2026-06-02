@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -27,28 +28,54 @@ function Dashboard() {
   const [stats, setStats] =
     useState(null);
 
-  // LOAD STATS
-  async function loadStats() {
+  const [loading, setLoading] =
+    useState(true);
 
-    try {
+  useEffect(() => {
+    let ignore = false;
 
-      const response =
-        await api.get("/dashboard");
+    async function loadStats() {
+      try {
+        const response =
+          await api.get("/dashboard");
 
-      setStats(response.data);
-
-    } catch {
-
-      toast.error(
-        "Error cargando dashboard"
-      );
+        if (!ignore) {
+          setStats(response.data);
+        }
+      } catch {
+        if (!ignore) {
+          toast.error(
+            "Error cargando dashboard"
+          );
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
     }
-  }
 
-  // AUTO LOAD
-  if (!stats) {
     loadStats();
-  }
+
+    const handleSalesUpdated = () => {
+      if (!ignore) {
+        loadStats();
+      }
+    };
+
+    window.addEventListener(
+      "sales-updated",
+      handleSalesUpdated
+    );
+
+    return () => {
+      ignore = true;
+      window.removeEventListener(
+        "sales-updated",
+        handleSalesUpdated
+      );
+    };
+  }, []);
 
   // CARDS
   const cards = useMemo(() => {
@@ -103,7 +130,7 @@ function Dashboard() {
 
   }, [stats]);
 
-  if (!stats) {
+  if (loading || !stats) {
 
     return (
       <MainLayout>

@@ -1,5 +1,6 @@
 import {
   useState,
+  useRef,
 } from "react";
 
 import axios from "axios";
@@ -27,13 +28,269 @@ function InvoiceModal({
   const [loading, setLoading] =
     useState(false);
 
+  const [searching, setSearching] =
+    useState(false);
+
+  const [lastSearchedDocument, setLastSearchedDocument] =
+    useState("");
+
+  const [lastSearchedEmail, setLastSearchedEmail] =
+    useState("");
+
+  const documentDebounceRef =
+    useRef(null);
+
+  const emailDebounceRef =
+    useRef(null);
+
   if (!sale)
     return null;
+
+  async function searchCustomerByDocument(
+    doc
+  ) {
+
+    if (
+      !doc ||
+      doc.trim().length === 0
+    ) {
+      return;
+    }
+
+    try {
+
+      setSearching(true);
+
+      const response =
+        await axios.get(
+          `http://localhost:4000/api/customers/search/document/${doc}`
+        );
+
+      if (response.data) {
+
+        setCustomerName(
+          response.data.name ||
+            ""
+        );
+
+        setCustomerPhone(
+          response.data.phone ||
+            ""
+        );
+
+        setCustomerEmail(
+          response.data.email ||
+            ""
+        );
+
+        setLastSearchedDocument(
+          doc
+        );
+
+      }
+
+    } catch {
+
+      // Cliente no encontrado,
+      // no mostrar error
+
+    } finally {
+
+      setSearching(false);
+    }
+  }
+
+  async function searchCustomerByEmail(
+    email
+  ) {
+
+    if (
+      !email ||
+      email.trim().length === 0
+    ) {
+      return;
+    }
+
+    try {
+
+      setSearching(true);
+
+      const response =
+        await axios.get(
+          `http://localhost:4000/api/customers/search/email/${email}`
+        );
+
+      if (response.data) {
+
+        setCustomerName(
+          response.data.name ||
+            ""
+        );
+
+        setCustomerPhone(
+          response.data.phone ||
+            ""
+        );
+
+        setCustomerDocument(
+          response.data.document ||
+            ""
+        );
+
+        setLastSearchedEmail(
+          email
+        );
+
+      }
+
+    } catch {
+
+      // Cliente no encontrado,
+      // no mostrar error
+
+    } finally {
+
+      setSearching(false);
+    }
+  }
+
+  function handleDocumentChange(
+    value
+  ) {
+
+    setCustomerDocument(value);
+
+    // Si el documento cambió
+    // respecto al que se buscó,
+    // limpiar los datos
+    // auto-cargados
+    if (
+      value !==
+        lastSearchedDocument &&
+      lastSearchedDocument !== ""
+    ) {
+
+      setCustomerName("");
+      setCustomerPhone("");
+      setCustomerEmail("");
+      setLastSearchedDocument("");
+    }
+
+    clearTimeout(
+      documentDebounceRef.current
+    );
+
+    documentDebounceRef.current =
+      setTimeout(() => {
+
+        searchCustomerByDocument(
+          value
+        );
+
+      }, 2000);
+  }
+
+  function handleEmailChange(
+    value
+  ) {
+
+    setCustomerEmail(value);
+
+    // Si el correo cambió
+    // respecto al que se buscó,
+    // limpiar los datos
+    // auto-cargados
+    if (
+      value !==
+        lastSearchedEmail &&
+      lastSearchedEmail !== ""
+    ) {
+
+      setCustomerName("");
+      setCustomerPhone("");
+      setCustomerDocument("");
+      setLastSearchedEmail("");
+    }
+
+    clearTimeout(
+      emailDebounceRef.current
+    );
+
+    emailDebounceRef.current =
+      setTimeout(() => {
+
+        searchCustomerByEmail(
+          value
+        );
+
+      }, 2000);
+  }
+
+  function determineCustomer() {
+
+    const hasName =
+      customerName.trim().length > 0;
+
+    const hasDocument =
+      customerDocument.trim()
+        .length > 0;
+
+    const hasPhone =
+      customerPhone.trim()
+        .length > 0;
+
+    const hasEmail =
+      customerEmail.trim()
+        .length > 0;
+
+    const hasAnyField =
+      hasName ||
+      hasDocument ||
+      hasPhone ||
+      hasEmail;
+
+    // Si no hay ningún campo,
+    // es consumidor final
+    if (!hasAnyField) {
+
+      return {
+        name: "CONSUMIDOR FINAL",
+        document: "222222222222",
+        phone: "No informado",
+        email: "No informado",
+      };
+    }
+
+    // Si hay al menos un campo,
+    // NO es consumidor final
+    return {
+      name:
+        hasName ?
+          customerName :
+          "Cliente registrado",
+      document:
+        hasDocument ?
+          customerDocument :
+          "222222222222",
+      phone:
+        hasPhone ?
+          customerPhone :
+          "No informado",
+      email:
+        hasEmail ?
+          customerEmail :
+          "No informado",
+    };
+  }
 
   async function handleGenerateInvoice() {
 
     if (!sale) {
-      toast.error("No hay venta para facturar");
+
+      toast.error(
+        "No hay venta para facturar"
+      );
+
       return;
     }
 
@@ -42,31 +299,14 @@ function InvoiceModal({
       setLoading(true);
 
       const finalCustomer =
-        customerName.trim()
-          ? {
-              name: customerName,
-              document:
-                customerDocument ||
-                "222222222222",
-              phone:
-                customerPhone ||
-                "No informado",
-              email:
-                customerEmail ||
-                "No informado",
-            }
-          : {
-              name: "CONSUMIDOR FINAL",
-              document: "222222222222",
-              phone: "No informado",
-              email: "No informado",
-            };
+        determineCustomer();
 
       const response =
         await axios.post(
           "http://localhost:4000/api/sales",
           {
-            customer: finalCustomer,
+            customer:
+              finalCustomer,
             cart: sale.cart,
             subtotal: sale.subtotal,
             iva: sale.iva,
@@ -82,18 +322,22 @@ function InvoiceModal({
       const printedSale =
         invoiceResponse.data;
 
-      const printWindow = window.open(
-        "",
-        "_blank",
-        "width=900,height=1000"
-      );
+      const printWindow =
+        window.open(
+          "",
+          "_blank",
+          "width=900,height=1000"
+        );
 
       if (!printWindow) {
+
         toast.error(
           "El navegador bloqueó la ventana de impresión"
         );
+
         onSaleComplete?.();
         onClose();
+
         return;
       }
 
@@ -101,6 +345,7 @@ function InvoiceModal({
         new Date(
           printedSale.created_at
         ).toLocaleDateString();
+
       const invoiceTime =
         new Date(
           printedSale.created_at
@@ -387,15 +632,25 @@ function InvoiceModal({
       onClose();
 
       printWindow.onload = () => {
+
         printWindow.print();
         printWindow.close();
       };
 
-      toast.success("Factura generada correctamente");
-    } catch (error) {
-      console.log(error);
-      toast.error("Error generando factura");
+      toast.success(
+        "Factura generada correctamente"
+      );
+
+    } catch (_error) {
+
+      console.log(_error);
+
+      toast.error(
+        "Error generando factura"
+      );
+
     } finally {
+
       setLoading(false);
     }
   }
@@ -436,7 +691,13 @@ function InvoiceModal({
           Generar Factura
         </h2>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div
+          className="
+            grid
+            grid-cols-2
+            gap-4
+          "
+        >
 
           <input
             type="text"
@@ -461,16 +722,18 @@ function InvoiceModal({
             placeholder="Documento"
             value={customerDocument}
             onChange={(e) =>
-              setCustomerDocument(
+              handleDocumentChange(
                 e.target.value
               )
             }
+            disabled={searching}
             className="
               border
               p-3
               rounded-xl
               text-black
               bg-white
+              disabled:bg-gray-100
             "
           />
 
@@ -497,16 +760,18 @@ function InvoiceModal({
             placeholder="Correo"
             value={customerEmail}
             onChange={(e) =>
-              setCustomerEmail(
+              handleEmailChange(
                 e.target.value
               )
             }
+            disabled={searching}
             className="
               border
               p-3
               rounded-xl
               text-black
               bg-white
+              disabled:bg-gray-100
             "
           />
 
@@ -519,9 +784,21 @@ function InvoiceModal({
             mt-4
           "
         >
-          Si no agregas datos,
-          se emitirá como
-          CONSUMIDOR FINAL.
+          {
+            customerName.trim()
+              .length === 0 &&
+            customerDocument
+              .trim()
+              .length === 0 &&
+            customerPhone
+              .trim()
+              .length === 0 &&
+            customerEmail
+              .trim()
+              .length === 0
+              ? "Si no agregas datos, se emitirá como CONSUMIDOR FINAL."
+              : "Se emitirá a nombre del cliente registrado."
+          }
         </p>
 
         <div
@@ -557,7 +834,9 @@ function InvoiceModal({
             onClick={
               handleGenerateInvoice
             }
-            disabled={loading}
+            disabled={
+              loading || searching
+            }
             className="
               bg-black
               text-white
@@ -565,12 +844,15 @@ function InvoiceModal({
               py-3
               rounded-xl
               font-bold
+              disabled:opacity-50
             "
           >
 
             {loading
               ? "Generando..."
-              : "Generar Factura"}
+              : searching
+                ? "Buscando..."
+                : "Generar Factura"}
 
           </button>
 

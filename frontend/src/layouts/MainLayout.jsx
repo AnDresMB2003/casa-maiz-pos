@@ -11,8 +11,8 @@ function MainLayout({
       className="
         flex
         min-h-screen
-        bg-[#09090B]
-        text-white
+        bg-[var(--bg)]
+        text-[var(--text)]
       "
     >
 
